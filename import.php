@@ -20,6 +20,8 @@
 		if ($f = fopen($_FILES['file']['tmp_name'], 'r')) {
 			$rows = array();
 			$columns = array();
+			if (isset($_POST['has_header'])) $header = fgetcsv($f, 0, ';');
+			
 			while ($row = fgetcsv($f, 0, ';')) {
 				$rows[] = "($order_list_id, $import_id)";
 				$columns[] = $row;
@@ -30,14 +32,14 @@
 			$i = 0;
 			$query = array();
 			while ($id = mysql_fetch_assoc($result)) {
-				foreach ($columns[$i] as $column) {
+				$pos = 0;
+				foreach ($columns[$i++] as $column) {
 					$tmp = trim($column);
-					$query[] = "($id[id], '$tmp')";
+					$query[] = "($id[id], " . $pos++ . ", '$tmp')";
 				}
-				$i++;
 			}
 			
-			$result = mysql_query("INSERT INTO ot_column (row_id, data) VALUES " . join(', ', $query)) or die(mysql_error());
+			$result = mysql_query("INSERT INTO ot_column (row_id, pos, data) VALUES " . join(', ', $query)) or die(mysql_error());
 			
 			fclose($f);
 			
@@ -55,8 +57,9 @@
 <?php elseif ($_SERVER["REQUEST_METHOD"]=='GET'): ?>
 	<div>
 		<form action="index.php?p=import" method="POST" enctype="multipart/form-data">
-			<?php echo create_dropdown_menu('list', 'ot_order_list', 'Neue Liste erstellen'); ?>
-			<input type="file" name="file" />
+			Liste: <?php echo create_dropdown_menu('list', 'ot_order_list', 'Neue Liste erstellen'); ?> <br />
+			Datei: <input type="file" name="file" /> <br />
+			Datei hat Spaltennamen: <input type="checkbox" name="has_header" value="1" checked />  <br />
 			<input type="submit" value="Senden" />
 		</form>
 	</div>
