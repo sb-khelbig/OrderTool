@@ -8,17 +8,24 @@
 		<?php $order_list = get_row_by_id($_GET['id'], 'ot_order_list'); ?>
 		<?php if ($order_list): ?>
 			<h1><?php echo $order_list['name']; ?></h1>
-			<?php $rows = mysql_query("SELECT * FROM ot_row WHERE order_list_id=$order_list[id] LIMIT 10") or die(mysql_error()); ?>
+			<?php
+			$limit_start = 0; $limit_end = 100;
+			$result = mysql_query("SELECT id FROM ot_row WHERE order_list_id=$order_list[id] LIMIT $limit_start, $limit_end");
+			$rows = array();
+			while ($row = mysql_fetch_assoc($result)) {
+				$rows[] = $row['id'];
+			}
+			$rows = join(', ', $rows);
+			$columns = mysql_query("SELECT * FROM ot_column WHERE row_id in ($rows)");
+			$last_row_id = 0;
+			?>
 			<table>
-			<?php while ($row = mysql_fetch_assoc($rows)): ?>
-				<?php $columns = mysql_query("SELECT * FROM ot_column WHERE row_id=$row[id]") or die(mysql_error()); ?>
-				<?php echo mysql_num_rows($columns); ?>
 				<tr>
-					<?php while ($column = mysql_fetch_assoc($columns)): ?>
+				<?php while ($column = mysql_fetch_assoc($columns)): ?>
+				<?php if ($column['row_id'] > $last_row_id) echo '</tr><tr>'; $last_row_id=$column['row_id']; ?>
 					<td><?php echo $column['data']; ?></td>
-					<?php endwhile; ?>
+				<?php endwhile; ?>
 				</tr>
-			<?php endwhile; ?>
 			</table>
 		<?php else: ?>
 			<p>ID existiert nicht!</p>

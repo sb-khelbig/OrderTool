@@ -9,7 +9,7 @@
 		<ul>
 			<li> <a href="<?php echo $root . '?p=products'; ?>" class="nav_cat">Produkte</a>
 				<ul>
-					<li> <a href="/products/" class="nav_sub">Übersicht</a> </li>
+					<li> <a href="/products/" class="nav_sub">Ãœbersicht</a> </li>
 					<li> <a href="/products/import/" class="nav_sub"> Importieren </a> </li>
 					<li> <a href="/products/search/" class="nav_sub"> Suche </a> </li>
 				</ul>

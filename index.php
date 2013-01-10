@@ -1,4 +1,4 @@
-<html>
+<html lang="de">
 	<head>
 		<title>OrderTool</title>
 		<?php include ('static/head.php'); ?>

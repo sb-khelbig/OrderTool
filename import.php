@@ -13,7 +13,7 @@
 		if ($_POST['list']) {
 			$order_list_id = $_POST['list'];
 		} else {
-			$result = mysql_query('INSERT INTO ot_order_list VALUES ()');
+			$result = mysql_query("INSERT INTO ot_order_list (name) VALUES ('Unbenannte Liste $timestamp')");
 			$order_list_id = mysql_insert_id();
 		}
 		
