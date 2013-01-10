@@ -1,22 +1,36 @@
 <?php include ('db/connection.php'); include ('db/functions.php')?>
 
 <?php if ($_SERVER["REQUEST_METHOD"]=='POST'): ?>
-	<p>TODO</p>
+	<?php
+	$order_list = get_row_by_id($_POST['id'], 'ot_order_list');
+	if ($order_list) {
+		$name = mysql_real_escape_string($_POST['name']);
+		$result = mysql_query("UPDATE ot_order_list SET name='$name' WHERE id=$order_list[id]");
+		header("Location: index.php?p=orderlists&id=$order_list[id]");
+	} else {
+		header("Location: index.php?p=orderlists");
+	}
+	?>
 
 <?php elseif ($_SERVER["REQUEST_METHOD"]=='GET'): ?>
 	<?php if (isset($_GET['id'])): ?>
 		<?php $order_list = get_row_by_id($_GET['id'], 'ot_order_list'); ?>
 		<?php if ($order_list): ?>
-			<h1><?php echo $order_list['name']; ?></h1>
+			<form action="index.php?p=orderlists" method="POST" enctype="multipart/form-data">
+				<input type="hidden" value="<?php echo $order_list['id']; ?>" name="id" />
+				<input type="text" value="<?php echo $order_list['name']; ?>" name="name" style="padding-left: 2px;" />
+				<input type="submit" value="Namen ändern" />
+			</form>
 			<?php
-			$limit_start = 0; $limit_end = 100;
-			$result = mysql_query("SELECT id FROM ot_row WHERE order_list_id=$order_list[id] LIMIT $limit_start, $limit_end");
+			/*$limit_start = 0; $limit_end = 100;
+			$result = mysql_query("SELECT id FROM ot_row WHERE order_list_id=$order_list[id]");// LIMIT $limit_start, $limit_end");
 			$rows = array();
 			while ($row = mysql_fetch_assoc($result)) {
 				$rows[] = $row['id'];
 			}
 			$rows = join(', ', $rows);
-			$columns = mysql_query("SELECT * FROM ot_column WHERE row_id in ($rows)");
+			$columns = mysql_query("SELECT * FROM ot_column WHERE row_id in ($rows)");*/
+			$columns = mysql_query("SELECT * FROM ot_column WHERE row_id in (SELECT id FROM ot_row WHERE order_list_id=$order_list[id])");
 			$last_row_id = 0;
 			?>
 			<table>

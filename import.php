@@ -1,4 +1,4 @@
-<?php include ('db/connection.php'); ?>
+<?php include ('db/connection.php'); include ('functions/html.php')?>
 
 <?php if ($_SERVER["REQUEST_METHOD"]=='POST'): ?>
 
@@ -55,13 +55,7 @@
 <?php elseif ($_SERVER["REQUEST_METHOD"]=='GET'): ?>
 	<div>
 		<form action="index.php?p=import" method="POST" enctype="multipart/form-data">
-			<select name="list">
-				<option value="0">Neue Liste erstellen</option>
-				<?php $result = mysql_query('SELECT id, name FROM ot_order_list');
-				while ($row = mysql_fetch_assoc($result)) {
-					echo '<option value="' . $row['id'] . '">' . $row['name'] . '</option>';
-				} ?>
-			</select>
+			<?php echo create_dropdown_menu('list', 'ot_order_list', 'Neue Liste erstellen'); ?>
 			<input type="file" name="file" />
 			<input type="submit" value="Senden" />
 		</form>
