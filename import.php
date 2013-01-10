@@ -1,4 +1,5 @@
 <?php include ('db/connection.php'); ?>
+
 <?php if ($_SERVER["REQUEST_METHOD"]=='POST'): ?>
 
 	<?php 
@@ -39,6 +40,8 @@
 			$result = mysql_query("INSERT INTO ot_column (row_id, data) VALUES " . join(', ', $query)) or die(mysql_error());
 			
 			fclose($f);
+			
+			header("Location: index.php?p=orderlists&id=$order_list_id");
 			
 		} else {
 			echo 'Dateifehler!';

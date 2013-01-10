@@ -68,7 +68,7 @@ body {
 #content {
 	clear: both;
 	min-height: 500px;
-	padding: 20px;
+	padding: 10px;
 }
 
 #footer {
@@ -91,4 +91,19 @@ body {
 #footer th {
 	width: 150px;
 }
-	
+
+table {
+	border-collapse: collapse;
+	font-family: Arial;
+}
+			
+tr.colored {
+	background: grey;
+}
+			
+td, th {
+	border: 1px solid black;
+	text-align: center;
+	white-space: nowrap;
+	padding: 0px 10px 0px 10px;
+}
