@@ -30,13 +30,20 @@
 			}
 			$rows = join(', ', $rows);
 			$columns = mysql_query("SELECT * FROM ot_column WHERE row_id in ($rows)");*/
+			$header = mysql_query("SELECT id, original_label FROM ot_order_list_has_header WHERE order_list_id=$order_list[id]");
 			$columns = mysql_query("SELECT * FROM ot_column WHERE row_id in (SELECT id FROM ot_row WHERE order_list_id=$order_list[id])");
 			$last_row_id = 0;
 			?>
 			<table>
 				<tr>
+				<?php while ($h = mysql_fetch_assoc($header)): ?>
+					<td><?php echo $h['original_label']; ?> </td>
+				<?php endwhile; ?>
 				<?php while ($column = mysql_fetch_assoc($columns)): ?>
-				<?php if ($column['row_id'] > $last_row_id) echo '</tr><tr>'; $last_row_id=$column['row_id']; ?>
+				<?php if ($column['row_id'] > $last_row_id): ?>
+				</tr>
+				<tr>
+				<?php endif; $last_row_id=$column['row_id']; ?>
 					<td><?php echo $column['data']; ?></td>
 				<?php endwhile; ?>
 				</tr>
@@ -52,7 +59,7 @@
 			<?php while ($row = mysql_fetch_assoc($result)): ?>
 				<tr>
 					<td><?php echo $row['id'];?></td>
-					<td><a href="<?php echo "?p=orderlists&id=$row[id]";?>"><?php echo $row['name'];?></a></td>
+					<td><a href="<?php echo "?p=orderlists&id=$row[id]";?>"><?php echo $row['name']; ?></a></td>
 				</tr>
 			<?php endwhile; ?>
 		</table>
