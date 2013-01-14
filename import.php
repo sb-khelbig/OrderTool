@@ -1,5 +1,3 @@
-<?php include ('db/connection.php'); include ('functions/html.php')?>
-
 <?php if ($_SERVER["REQUEST_METHOD"]=='POST'): ?>
 
 	<?php 

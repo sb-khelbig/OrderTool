@@ -1,3 +1,7 @@
+<?php $_SESSION['UserID'] = 0; ?>
+
+<?php include ('db/connection.php'); include ('db/functions.php'); include ('functions/html.php'); ?>
+
 <html lang="de">
 	<head>
 		<title>OrderTool</title>
