@@ -13,4 +13,16 @@ function get_row_by_id($id, $table, $identifier='id') {
 	}
 	return False;
 }
+
+/**
+ * Durchgeführte Funktion loggen
+ * @param string|int $action_id ID der Aktion
+ * @param string|int $ref_id ID des Eintrags
+ * @return string Fehlermeldung oder leerer String
+ */
+function log_action($action_id, $ref_id) {
+	$timestamp = time();
+	$result = mysql_query("INSERT INTO ot_action_log (user_id, ref_id, action_id, timestamp_created) VALUES ($_SESSION[UserID], $ref_id, $action_id, $timestamp)");
+	return mysql_error();
+}
 ?>

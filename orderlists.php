@@ -9,6 +9,7 @@
 						$name = mysql_real_escape_string($_POST['name']);
 						$result = mysql_query("UPDATE ot_order_list SET name='$name' WHERE id=$order_list[id]");
 						if (mysql_affected_rows() != -1) {
+							log_action(3, $order_list['id']);
 							echo "Name erfolgreich geändert!";
 						} else {
 							echo "Name konnte nicht geändert werden!";
@@ -21,6 +22,7 @@
 							$header_id = mysql_real_escape_string($_POST[$key]);
 							$result = mysql_query("UPDATE ot_order_list_has_header SET header_id=$header_id WHERE id=$id");
 						}
+						log_action(5, $order_list['id']);
 						header("Location: index.php?p=orderlists&id=$order_list[id]");
 						break;
 					default:
