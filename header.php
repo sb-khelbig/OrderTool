@@ -7,6 +7,7 @@
 				$result = mysql_query("INSERT INTO ot_header (name) VALUES ('$name')") or die(mysql_error());
 				if ($id = mysql_insert_id()) {
 					echo "Header added!";
+					log_action(7, $id);
 					header("Location: index.php?p=header&id=$id");
 				} else {
 					echo "Header could not be added!";
@@ -20,6 +21,7 @@
 						$result = mysql_query("UPDATE ot_header SET name='$name' WHERE id=$header[id]");
 						if (mysql_affected_rows() != -1) {
 							echo "Name erfolgreich geändert!";
+							log_action(8, $header['id']);
 						} else {
 							echo "Name konnte nicht geändert werden!";
 						}

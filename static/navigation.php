@@ -21,5 +21,9 @@
 				</ul>
 			</li>
 		</ul>
+		<ul>
+			<li> <a href="<?php echo $root . '?p=mails'; ?>" class="nav_cat">eMails</a>
+			</li>
+		</ul>
 	</nav>
 </div>

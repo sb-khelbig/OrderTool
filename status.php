@@ -7,6 +7,7 @@
 				$result = mysql_query("INSERT INTO ot_order_status (name) VALUES ('$name')");
 				if ($id = mysql_insert_id()) {
 					echo "Status added!";
+					log_action(9, $id);
 					header("Location: index.php?p=status&id=$id");
 				} else {
 					echo "Status could not be added!";
@@ -20,6 +21,7 @@
 						$result = mysql_query("UPDATE ot_order_status SET name='$name' WHERE id=$status[id]");
 						if (mysql_affected_rows() != -1) {
 							echo "Name erfolgreich geändert!";
+							log_action(10, $status['id']);
 						} else {
 							echo "Name konnte nicht geändert werden!";
 						}
