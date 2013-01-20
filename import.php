@@ -33,9 +33,11 @@
 					// Variablen überprüfen und Auswahl in der DB speichern
 					$has_header = (isset($_POST['has_header'])) ? 1 : 0;
 					$list = (isset($_POST['list'])) ? $_POST['list'] : 0;
-					$status = (isset($_POST['status'])) ? $_POST['status'] : 0; //TODO: Status überprüfen
-					$matching = (isset($_POST['matching'])) ? $_POST['matching'] : 0;
+					$status = (isset($_POST['status'])) ? get_row_by_id($_POST['status'], 'ot_order_status') : 0;
+					$matching = (isset($_POST['matching'])) ? get_row_by_id($_POST['matching'], 'ot_row_has_header') : 0;
 					
+					echo $has_header, $list, $status, $matching;
+					die();
 					$result = mysql_query("UPDATE ot_import SET opt_has_header=$has_header, opt_order_list=$list, opt_order_status=$status, opt_matching=$matching WHERE id=$import[id]") or die(mysql_error());
 					
 					// Datei öffnen
@@ -100,42 +102,68 @@
 								
 								// Matching, Daten aktualisieren
 								else {
+									// Header der Liste abfragen
+									$headers = array('0' => False);
 									$result = mysql_query("SELECT * FROM ot_order_list_has_header WHERE order_list_id=$order_list[id]");
 									while ($header = mysql_fetch_assoc($result)) {
 										$headers[$header['id']] = $header;
 									}
 									
-									// Header auslesen
+									// Header des Uploads aus der Form auslesen
 									$headers_selected = array();
 									foreach (preg_grep('/^header_[0-9]+$/', array_keys($_POST)) as $key) {
 										$headers_selected[trim($key, 'header_')] = mysql_real_escape_string($_POST[$key]);
 									}
 									
-									print_r($headers);
-									print_r($headers_selected);
+									// Position für Upload-Spalten suchen
+									$h_s_count = count($headers_selected);
+									$toUpdate = array();
+									$first_opt_pos = count($headers);
+									$current_opt_pos = $first_opt_pos;
+									for ($index=0; $index < $h_s_count; $index++) {
+										$header = $headers[$headers_selected[$index]];
+										$pos = ($header) ? $header['pos'] : $current_opt_pos++;
+										$toUpdate[$index] = $pos;
+									}
 									
-									$positions = array();
+									// Spaltenbezichnungen auslassen
+									if ($has_header) {
+										$row = fgetcsv($f, 0, ';');
+									}
 									
-									$row = fgetcsv($f, 0, ';');
-									$tmp = array();
-									foreach ($row as $index => $column) {
+									// Position der Spalte, die die UID enthält
+									$uid_pos = array_search($matching['id'], $headers_selected);
+									
+									while ($row = fgetcsv($f, 0, ';')) {
+										$data = trim($row[$uid_pos]);
+										$result = mysql_query("SELECT row_id FROM ot_column WHERE pos=$matching[pos] AND data=''");
+										if ($num_rows = mysql_num_rows($result)) {
+											if ($num_rows == 1) {
+												$row_id = mysql_fetch_assoc($result)['row_id'];
+												$update = array();
+												foreach ($row as $index => $column) {
+													// UID-Spalte muss nicht aktualisiert werden
+													if ($index == $uid_pos) {
+														continue;
+													} else {
+														$data = trim($column);
+														$update[] = "pos=$toUpdate[$index] THEN '$data'";
+													}
+												}
+												$cases = join(' WHEN ', $update);
+												$positions = join(', ', $toUpdate);
+												$result = "UPDATE ot_column SET data = CASE $cases END WHERE pos IN ($positions) AND row_id=$row_id";
+												echo $result;
+											} else {
+												// error: id not unique
+												continue;
+											}
+										} else {
+											// error: zeile nicht gefunden
+											continue;
+										}
 										
 									}
-									
-									
-									$rows = array();
-									while ($row = fgetcsv($f, 0, ';')) {
-										$tmp = array();
-										foreach ($row as $index => $column) {
-											if (isset($headers[$headers_selected[$index]])) {
-												t
-											}
-											$pos = (isset($headers[$headers_selected[$index]])) ? $headers[$headers_selected[$index]]['pos'] : $index;
-											$tmp[$pos] = $column;
-										}
-										$rows[] = $tmp;
-									}
-									print_r($rows);
 								}
 							} 
 							
