@@ -6,6 +6,10 @@ table {
 tr.colored {
 	background: grey;
 }
+
+tr.error {
+	background: red;
+}
 			
 td, th {
 	border: 1px solid black;

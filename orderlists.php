@@ -38,7 +38,7 @@
 		<?php if ($order_list = get_row_by_id($_GET['id'], 'ot_order_list')): ?>
 			<form action="<?php echo "index.php?p=orderlists&id=$order_list[id]"; ?>" method="POST" enctype="multipart/form-data">
 				<input type="hidden" value="change_name" name="action" />
-				<input type="text" value="<?php echo $order_list['name']; ?>" name="name" style="padding-left: 2px;" />
+				<input type="text" value="<?php echo $order_list['name']; ?>" name="name" style="padding-left: 2px; width: 350" />
 				<input type="submit" value="Namen ändern" />
 			</form>
 			<?php
@@ -47,7 +47,7 @@
 			while ($header = mysql_fetch_assoc($result)) {
 				$headers[] = $header;
 			}
-			$columns = mysql_query("SELECT * FROM ot_column WHERE row_id in (SELECT id FROM ot_row WHERE order_list_id=$order_list[id])");
+			$columns = mysql_query("SELECT * FROM ot_column WHERE row_id in (SELECT id FROM ot_row WHERE order_list_id=$order_list[id]) ORDER BY row_id, pos");
 			$last_row_id = 0;
 			?>
 			<form action="<?php echo "index.php?p=orderlists&id=$order_list[id]"; ?>" method="POST" enctype="multipart/form-data">

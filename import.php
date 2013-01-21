@@ -34,11 +34,11 @@
 					$has_header = (isset($_POST['has_header'])) ? 1 : 0;
 					$list = (isset($_POST['list'])) ? $_POST['list'] : 0;
 					$status = (isset($_POST['status'])) ? get_row_by_id($_POST['status'], 'ot_order_status') : 0;
-					$matching = (isset($_POST['matching'])) ? get_row_by_id($_POST['matching'], 'ot_row_has_header') : 0;
+					$status = ($status) ? $status['id'] : 0;
+					$matching = (isset($_POST['matching'])) ? get_row_by_id($_POST['matching'], 'ot_header') : 0;
+					$matching_id = ($matching) ? $matching['id'] : 0;
 					
-					echo $has_header, $list, $status, $matching;
-					die();
-					$result = mysql_query("UPDATE ot_import SET opt_has_header=$has_header, opt_order_list=$list, opt_order_status=$status, opt_matching=$matching WHERE id=$import[id]") or die(mysql_error());
+					$result = mysql_query("UPDATE ot_import SET opt_has_header=$has_header, opt_order_list=$list, opt_order_status=$status, opt_matching=$matching_id WHERE id=$import[id]") or die('Optionen updaten' + mysql_error());
 					
 					// Datei öffnen
 					if ($f = fopen("files/$import[file]", 'r')) {
@@ -49,7 +49,7 @@
 								
 								// Kein Matching, Daten hinzufügen
 								if (!$matching) {
-									$rows = array(); $columns = array(); $timestamp;
+									$rows = array(); $columns = array(); $timestamp = time();
 									$headers = mysql_query("SELECT * FROM ot_order_list_has_header WHERE order_list_id=$order_list[id]");
 									
 									$row = fgetcsv($f, 0, ';');
@@ -103,11 +103,15 @@
 								// Matching, Daten aktualisieren
 								else {
 									// Header der Liste abfragen
-									$headers = array('0' => False);
+									$headers = array();
 									$result = mysql_query("SELECT * FROM ot_order_list_has_header WHERE order_list_id=$order_list[id]");
+									$optional = 1;
 									while ($header = mysql_fetch_assoc($result)) {
-										$headers[$header['id']] = $header;
+										$id = ($header['header_id']) ? $header['header_id'] : 'Optional ' . $optional++;
+										$headers[$id] = $header;
 									}
+									
+									print_r($headers); echo '<br>';
 									
 									// Header des Uploads aus der Form auslesen
 									$headers_selected = array();
@@ -115,54 +119,131 @@
 										$headers_selected[trim($key, 'header_')] = mysql_real_escape_string($_POST[$key]);
 									}
 									
-									// Position für Upload-Spalten suchen
-									$h_s_count = count($headers_selected);
+									print_r($headers_selected); echo '<br>';
+									
+									$matching_row = array_search($matching['id'], $headers_selected); // Position der Spalte, die die UID enthält
+									$matching_pos = 0;
+									foreach ($headers as $id => $h) {
+										if ($id == $matching['id']) {
+											$matching_pos = $h['pos'];
+											break;
+										}
+									}
 									$toUpdate = array();
-									$first_opt_pos = count($headers);
-									$current_opt_pos = $first_opt_pos;
-									for ($index=0; $index < $h_s_count; $index++) {
-										$header = $headers[$headers_selected[$index]];
-										$pos = ($header) ? $header['pos'] : $current_opt_pos++;
-										$toUpdate[$index] = $pos;
+									$toInsert = array();
+									foreach ($headers_selected as $index => $id) {
+										echo "$index, $id <br>";
+										// Matchingspalte überspringen
+										if ($index == $matching_row) continue;
+										// vorhandene Spalte aktualisieren
+										if (isset($headers[$id])) {
+											$toUpdate[$index] = $headers[$id]['pos'];
+										}
+										// definierte Spalte hinzufügen
+										else {
+											$toInsert[$index] = $id;
+										}
 									}
 									
-									// Spaltenbezichnungen auslassen
+									print_r($toUpdate); echo '<br>';
+									print_r($toInsert); echo '<br>';
+									
+									$file_row = -1;
+									
+									// Spaltenbezeichnungen auslassen
 									if ($has_header) {
 										$row = fgetcsv($f, 0, ';');
+										$file_row++;
 									}
 									
-									// Position der Spalte, die die UID enthält
-									$uid_pos = array_search($matching['id'], $headers_selected);
-									
-									while ($row = fgetcsv($f, 0, ';')) {
-										$data = trim($row[$uid_pos]);
-										$result = mysql_query("SELECT row_id FROM ot_column WHERE pos=$matching[pos] AND data=''");
-										if ($num_rows = mysql_num_rows($result)) {
-											if ($num_rows == 1) {
-												$row_id = mysql_fetch_assoc($result)['row_id'];
-												$update = array();
-												foreach ($row as $index => $column) {
-													// UID-Spalte muss nicht aktualisiert werden
-													if ($index == $uid_pos) {
-														continue;
-													} else {
-														$data = trim($column);
-														$update[] = "pos=$toUpdate[$index] THEN '$data'";
-													}
-												}
-												$cases = join(' WHEN ', $update);
-												$positions = join(', ', $toUpdate);
-												$result = "UPDATE ot_column SET data = CASE $cases END WHERE pos IN ($positions) AND row_id=$row_id";
-												echo $result;
-											} else {
-												// error: id not unique
-												continue;
+									mysql_query("START TRANSACTION");
+									try {
+										// neue Header anlegen
+										if ($toInsert) {
+											$column_count = count($headers);
+											$new_headers = array();
+											foreach ($toInsert as $index => $id) {
+												$label = ($has_header) ? $row[$index] : '';
+												$pos = $column_count++;
+												$new_headers[] = "($order_list[id], $id, $pos, '$label')";
+												$toInsert[$index] = $pos;
 											}
-										} else {
-											// error: zeile nicht gefunden
-											continue;
+											
+											$values = join(', ', $new_headers);
+											print_r($values); echo '<br>';
+											$result = mysql_query_with_error("INSERT INTO ot_order_list_has_header (order_list_id, header_id, pos, original_label) VALUES $values");
 										}
 										
+										$errors = array();
+										while ($row = fgetcsv($f, 0, ';')) {
+											$file_row++;
+											$match = trim($row[$matching_row]);
+											
+											$result = mysql_query("SELECT ot_row.id FROM ot_row, ot_column WHERE ot_column.row_id = ot_row.id AND order_list_id=$order_list[id] AND ot_column.data = '$match' AND ot_column.pos='$matching_pos'");
+											if ($num_rows = mysql_num_rows($result)) {
+												if ($num_rows == 1) {
+													$row_id = mysql_fetch_assoc($result);
+													$row_id = $row_id['id'];
+													
+													$update = array();
+													foreach ($toUpdate as $index => $pos) {
+														$data = trim($row[$index]);
+														$update[] = "pos=$pos THEN '$data'";
+													}
+													
+													$insert = array();
+													foreach ($toInsert as $index => $pos) {
+														$data = trim($row[$index]);
+														$insert[] = "($row_id, $pos, '$data')";
+													}
+													
+													if ($update) {
+														$cases = join(' WHEN ', $update);
+														$positions = join(', ', $toUpdate);
+														$result = mysql_query_with_error("UPDATE ot_column SET data = CASE WHEN $cases END WHERE pos IN ($positions) AND row_id=$row_id");
+													}
+													
+													if ($insert) {
+														$values = join(', ', $insert);
+														$result = mysql_query_with_error("INSERT INTO ot_column (row_id, pos, data) VALUES $values");
+													}
+													
+												} else {
+													$errors[] = "($import[id], $file_row, 'Identifier not unique')";
+													continue;
+												}
+											} else {
+												$errors[] = "($import[id], $file_row, 'Identifier not found')";
+												continue;
+											}
+										}
+										
+										if ($errors) {
+											$values = join(', ', $errors);
+											$result = mysql_query_with_error("INSERT INTO ot_import_error (import_id, row, message) VALUES $values");
+										}
+										
+										// fehlende Spalten auffüllen
+										$result = mysql_query("SELECT row_id as id, COUNT(*) as column_count FROM ot_column WHERE row_id IN (SELECT id FROM ot_row WHERE order_list_id=$order_list[id]) GROUP BY row_id");
+										$insert = array();
+										while ($row = mysql_fetch_assoc($result)) {
+											$pos = $row['column_count'];
+											while ($pos < $column_count) {
+												$insert[] = "($row[id], $pos)";
+												$pos++;
+											}
+										}
+										
+										if ($insert) {
+											$values = join(', ', $insert);
+											$result = mysql_query_with_error("INSERT INTO ot_column (row_id, pos) VALUES $values");
+										}
+										
+										mysql_query("COMMIT"); // commit!
+										
+									} catch (Exception $e) {
+										print_r($e);
+										mysql_query("ROLLBACK");
 									}
 								}
 							} 
@@ -279,8 +360,23 @@
 						<td>Datum:</td>
 						<td><?php echo date('d.m.Y G:i', $import['timestamp_created']); ?></td>
 					</tr>
+					<?php if ($import['stored']): ?>
+					<tr>
+						<td>Gespeichert:</td>
+						<td><input type="checkbox" checked /></td>
+					</tr>
+					<tr>
+						<td>Fehler:</td>
+						<td><?php $result = mysql_query("SELECT * FROM ot_import_error WHERE import_id=$import[id]"); echo mysql_num_rows($result); ?></td>
+					</tr>
+					<?php endif; ?>
 				</table>
 			</div>
+			<?php $errors = array();
+			while ($row = mysql_fetch_assoc($result)) {
+				$errors[$row['row']] = $row;
+			}
+			?>
 			<form action="index.php?p=import" method="POST" enctype="multipart/form-data">
 				<input type="hidden" name="action" value="store" />
 				<input type="hidden" name="id" value="<?php echo $import['id']; ?>" />
@@ -314,7 +410,7 @@
 				<div>
 					<h3>Dateiinhalt</h3>
 					<table>
-						<?php $row = fgetcsv($f, 0, ';'); $pos = 0; ?>
+						<?php $row = fgetcsv($f, 0, ';'); $pos = 0; $file_row = 0; ?>
 						<tr>
 						<?php foreach ($row as $column): ?>
 							<?php $optional = ($import['opt_has_header']) ? "$column *" : 'Optional'; ?>
@@ -322,14 +418,14 @@
 						<?php endforeach; ?>
 						</tr>
 						<?php if (!$import['opt_has_header']): ?>
-						<tr>
+						<tr <?php if (isset($errors[$file_row])) echo 'class="error"'; ?>>
 						<?php foreach ($row as $column): ?>
 							<td><?php echo $column; ?></td>
 						<?php endforeach; ?>
 						</tr>
 						<?php endif; ?>
 						<?php while ($row = fgetcsv($f, 0, ';')): ?>
-						<tr>
+						<tr <?php if (isset($errors[++$file_row])) echo 'class="error"'; ?>>
 							<?php foreach ($row as $column): ?>
 							<td><?php echo $column; ?></td>
 							<?php endforeach; ?>
