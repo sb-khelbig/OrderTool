@@ -121,7 +121,7 @@ $has_header = ($has_header) ? 1 : 0;
 $result = mysql_query("	UPDATE ot_import
 						SET	timestamp_stored = $timestamp,
 						opt_has_header = $has_header,
-						opt_order_list = $order_list[id],
+						opt_order_list = $order_list[id]
 						WHERE id = $import[id]") or die('MYSQLError: ' . mysql_error());
 
 mysql_query("COMMIT");
