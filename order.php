@@ -7,7 +7,7 @@
 				switch ($_POST['action']) {
 					case 'add_note':
 						$data = mysql_real_escape_string($_POST['data']);
-						$result = mysql_query("INSERT INTO ot_note (user_id, ref_table, ref_id, data) VALUES ($_SESSION[UserID], 'ot_row', $order[id], '$data')");
+						$result = mysql_query("INSERT INTO ot_note (ref_table, ref_id, data) VALUES ('ot_row', $order[id], '$data')");
 						if (mysql_insert_id()) {
 							echo "Notiz gespeichert!";
 						} else {
@@ -18,13 +18,13 @@
 					case 'change_status':
 						$status_id = mysql_real_escape_string($_POST['status']);
 						$timestamp = time();
-						$result = mysql_query("INSERT INTO ot_row_has_order_status (user_id, row_id, order_status_id, timestamp_created) VALUES ($_SESSION[UserID], $order[id], $status_id, $timestamp)");
+						$result = mysql_query("INSERT INTO ot_row_has_order_status (row_id, order_status_id, timestamp_created) VALUES ($order[id], $status_id, $timestamp)");
 						if (mysql_insert_id()) {
 							echo "Status geändert!";
+							header("Location: index.php?p=order&id=$order[id]");
 						} else {
 							echo "Status konnte nicht geändert werden!";
 						}
-						header("Location: index.php?p=order&id=$order[id]");
 						break;
 					default:
 						echo "Unsupported action!";
@@ -48,6 +48,10 @@
 	<?php if (isset($_GET['id'])): ?>
 		<?php if ($order = get_row_by_id($_GET['id'], 'ot_row')): ?>
 			<h1>Bestellung <?php echo $order['id']; ?></h1>
+			
+			<?php // Liste
+			$liste = get_row_by_id($order['order_list_id'], 'ot_order_list');?>
+			<p>Liste: <?php echo $liste['name']; ?></p>
 			
 			<?php // Status
 			$result = mysql_query("SELECT order_status_id as id FROM ot_row_has_order_status WHERE row_id=$order[id] ORDER BY timestamp_created DESC LIMIT 1");

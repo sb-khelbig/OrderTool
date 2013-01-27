@@ -18,6 +18,15 @@ function get_row_by_id($id, $table, $identifier='id') {
 	return 0;
 }
 
+function get_row_by_id_as_array($id, $table, $identifier='id') {
+	if ($result = mysql_query("SELECT * FROM $table WHERE $identifier=" . mysql_real_escape_string($id))) {
+		while ($row = mysql_fetch_assoc($result)) {
+			return $row;
+		}
+	}
+	return array ('id' => 0);
+}
+
 /**
  * Durchgeführte Funktion loggen
  * @param string|int $action_id ID der Aktion
