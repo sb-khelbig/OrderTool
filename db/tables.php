@@ -219,7 +219,7 @@ abstract class BaseTable {
 		if (array_key_exists($name, $this->fields)) {
 			return $this->fields[$name]->get();
 		}
-		throw new InvalidValueException();
+		throw new InvalidValueException("Field '$name' in class '" . get_called_class() . "' does not exist!");
 	}
 	
 	function __set($name, $value) {
