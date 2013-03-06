@@ -26,7 +26,8 @@ foreach ($data_source->attributes->all() as $attribute) {
 						<select name="<?php echo "atr[". $atr->id . "]"; ?>">
 							<option value="0">Nicht speichern</option>
 							<?php foreach ($attributes as $attribute): ?>
-								<option value="<?php echo $attribute->id; ?>"><?php echo $attribute->name; ?></option>
+								<?php $selected = ($atr->attribute === $attribute) ? 'selected' : ''; ?>
+								<option value="<?php echo $attribute->id; ?>" <?php echo $selected; ?>><?php echo $attribute->name; ?></option>
 							<?php endforeach; ?>
 						</select>
 					</td>
