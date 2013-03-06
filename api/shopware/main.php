@@ -19,8 +19,9 @@ include "api/ot_api_attributes_matching.php";
 ?>
 </div>
 <div id="api_shopware_tabs_import">
-	<form action="<?php echo $ot->get_link("data_source", $data_source->id, "shopware"); ?>" method="POST">
-		<input type="hidden" name="action" value="import_orders">
+	<form action="<?php echo $ot->get_link("data_source", $data_source->id); ?>" method="POST">
+		<input type="hidden" name="action" value="api">
+		<input type="hidden" name="api_action" value="import_orders">
 		<input type="submit" value="Import Orders">
 	</form>
 </div>

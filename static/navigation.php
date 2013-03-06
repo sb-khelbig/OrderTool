@@ -28,6 +28,14 @@
 			</li>
 		</ul>
 		<ul>
+			<li> <a href="<?php echo $root . '&ot=api'; ?>" class="nav_cat">API</a>
+			</li>
+		</ul>
+		<ul>
+			<li> <a href="<?php echo $root . '&ot=data_source'; ?>" class="nav_cat">Datenquellen</a>
+			</li>
+		</ul>
+		<ul>
 			<li> <a href="<?php echo '?p=mails'; ?>" class="nav_cat">eMails</a>
 				<ul>
 					<li><a href="<?php echo $root . '&ot=mail&sub=accounts'; ?>" class="nav_sub">Accounts</a></li>
