@@ -227,7 +227,7 @@ abstract class BaseTable {
 			$this->fields[$name]->set($value);
 			$this->setStatus('changed');
 		} else {
-			throw new InvalidValueException();
+			throw new InvalidValueException("Field '$name' in class '" . get_called_class() . "' does not exist!");
 		}
 	}
 	

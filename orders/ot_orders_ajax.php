@@ -25,7 +25,27 @@ switch ($_GET['action']) {
 		$data['attributes'] = array('name' => $name, 'content' => join('', $content), 'id' => $id);
 		
 		// Customer
-		$data['customer'] = array('name' => 'Kunde', 'content' => 'Kunde', 'id' => 'customer_' . $order->id);
+		$customer = $order->customer;
+		$name = 'Kunde';
+		$id = 'customer_' . $order->id;
+		$content = array();
+		if ($customer) {
+			$customer_atrs = $customer->attributes->all();
+			if ($customer_atrs) {
+				$content[] = '<ul>';
+				foreach ($customer_atrs as $atr) {
+					$content[] = '<li>';
+						$content[] = $atr->attribute->name . ': ' . $atr->data;
+					$content[] = '</li>';
+				}
+				$content[] = '</ul>';
+			} else {
+				$content[] = '<p>Keine Attribute vorhanden</p>';
+			}
+		} else {
+			$content[] = '<p>Kein Kunde vorhanden</p>';
+		}
+		$data['customer'] = array('name' => $name, 'content' => join('', $content), 'id' => $id);
 		
 		// Positions
 		$positions = $order->positions->all();
