@@ -1,6 +1,6 @@
 <?php include 'db/tables.php'; 
 include 'db/mysql.php';
 
-echo '<pre>Y';
+echo '<pre>YO';
 
 var_dump(Table::all());
