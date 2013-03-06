@@ -1,4 +1,4 @@
-<?php $orders = Order::all(200); ?>
+<?php $orders = Order::all(); ?>
 
 <h1>Bestellungen</h1>
 

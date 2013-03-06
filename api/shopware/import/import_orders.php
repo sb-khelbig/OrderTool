@@ -3,6 +3,7 @@
 	$data_source = DataSource::get($_GET["id"]);
 	
 	$referer = $_SERVER["HTTP_REFERER"];
+	set_time_limit(0);
 	
 	$starttime = round(microtime(true),4);
 	
@@ -87,10 +88,10 @@
 	//// FETCH CUSTOMER ADDRESSES
 	// BILLING ADDRESSES
 	$customer_addition_fields = array(
-			"customernumber" => $attr_assoc["ot_customer_address"]["customernumber"],
-			"salutation" => $attr_assoc["ot_customer_address"]["salutation"],
-			"firstname" => $attr_assoc["ot_customer_address"]["firstname"],
-			"lastname" => $attr_assoc["ot_customer_address"]["lastname"],
+			"customernumber" => $attr_assoc["ot_customer"]["customernumber"],
+			"salutation" => $attr_assoc["ot_customer"]["salutation"],
+			"firstname" => $attr_assoc["ot_customer"]["firstname"],
+			"lastname" => $attr_assoc["ot_customer"]["lastname"],
 	);
 	$customer_billing_address_query = "
 	SELECT * FROM s_user_billingaddress WHERE userID IN (".join(",", array_keys($customers)).")
@@ -98,6 +99,10 @@
 	$customer_billing_address_result = mysql_query($customer_billing_address_query, $api_connid) OR die("Error: ".mysql_error());
 	while ($customer_billing_address = mysql_fetch_assoc($customer_billing_address_result))
 	{
+		// TODO: fetch country and state names with join
+		$customer_billing_address["country"] = $customer_billing_address["countryID"];
+		$customer_billing_address["state"] = $customer_billing_address["stateID"];
+		
 		$billing_address = new CustomerAddress();
 		$billing_address->type=0;
 		$customers[$customer_billing_address["userID"]]->addresses->add($billing_address);
@@ -127,8 +132,8 @@
 			"streetnumber" => $attr_assoc["ot_customer_address"]["streetnumber"],
 			"zipcode" => $attr_assoc["ot_customer_address"]["zipcode"],
 			"city" => $attr_assoc["ot_customer_address"]["city"],
-			"countryID" => $attr_assoc["ot_customer_address"]["countryID"],
-			"stateID" => $attr_assoc["ot_customer_address"]["stateID"]
+			"country" => $attr_assoc["ot_customer_address"]["country"],
+			"state" => $attr_assoc["ot_customer_address"]["state"]
 	);
 	$customer_shipping_address_query = "
 	SELECT * FROM s_user_shippingaddress WHERE userID IN (".join(",", array_keys($customers)).")
@@ -136,6 +141,10 @@
 	$customer_shipping_address_result = mysql_query($customer_shipping_address_query, $api_connid) OR die("Error: ".mysql_error());
 	while ($customer_shipping_address = mysql_fetch_assoc($customer_shipping_address_result))
 	{
+		// TODO: fetch country and state names with join
+		$customer_shipping_address["country"] = $customer_shipping_address["countryID"];
+		$customer_shipping_address["state"] = $customer_shipping_address["stateID"];
+		
 		$shipping_address = new CustomerAddress();
 		$shipping_address->type=1;
 		$customers[$customer_shipping_address["userID"]]->addresses->add($shipping_address);
@@ -160,7 +169,7 @@
 		{
 			for ($i = 0; $i < $s_order_details_row["quantity"]; $i++)
 			{
-				$s_order_details_row["quantity"] = 1;
+				$s_order_details_row["quantity"] = "1";
 				$order_position = new Position();
 				$orders[$s_order_details_row["orderID"]]->positions->add($order_position);
 				foreach ($attr_assoc["ot_position"] as $field_name => $attr)
@@ -188,12 +197,15 @@
 	}
 		
 	mysql_close($api_connid);
-
-	//Order::bulk_save($orders);
+	$endtime = round(microtime(true),4);
+	
+	$starttime_save = round(microtime(true),4);
+	Order::bulk_save($orders);
+	$endtime_save = round(microtime(true),4);
 
 	//// DEBUG
-	$endtime = round(microtime(true),4);
-	echo "Runtime ".substr(($endtime - $starttime),0,5)." seconds <br>";
+	echo "Runtime FETCH".substr(($endtime - $starttime),0,5)." seconds <br>";
+	echo "Runtime SAVE".substr(($endtime_save - $starttime_save),0,5)." seconds <br>";
 	echo "last_import_id: ".$last_import_id."<br>";
 	echo "orders: ".count($orders)."<br>";
 	echo "customers: ".count($customers)."<br>";
@@ -201,6 +213,6 @@
 	echo "customer_shipping_addresses: ".count($customer_shipping_addresses)."<br>";
 	echo "order_positions: ".count($order_positions)."<br>";
 	
-	header("Location: $referer#api_shopware_tabs_import");
+	//header("Location: $referer#api_shopware_tabs_import");
 
 ?>

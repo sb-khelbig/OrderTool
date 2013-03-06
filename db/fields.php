@@ -61,14 +61,17 @@ class CharField extends BaseField {
 	}
 	
 	protected function verify($value) {
-		if (is_string($value)) {
+		if ($value == NULL) {
+			$this->value = '';
+			return FALSE;
+		} elseif (is_string($value)) {
 			if (strlen($value) <= $this->data['max_length']) {
 				return TRUE;
 			} else {
 				throw new InvalidValueLengthException();
 			}
 		}
-		throw new InvalidValueException();
+		throw new InvalidValueException("ERROR: no string: $value (Column-name: ".$this->data['column_name'].")");
 	}
 }
 

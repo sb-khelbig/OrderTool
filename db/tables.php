@@ -327,6 +327,7 @@ class Customer extends BaseTable {
 		return array(
 				'id' => new PrimaryKeyField(),
 				'addresses' => new BackLinkField($instance, 'customer_id', 'CustomerAddress', 'customer'),
+				'attributes' => new AttributeValueField($instance),
 		);
 	}
 
