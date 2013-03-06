@@ -1,0 +1,26 @@
+.entry {
+	margin-bottom: 5px;
+	border: 2px solid black;
+	font-family: Arial;
+}
+
+.header {
+	font-size: 16pt;
+	border-bottom: 1px solid black;
+	padding: 5px;
+}
+
+.sender {
+	float: left;
+}
+
+.time {
+	text-align: right;
+}
+
+.body {
+	clear: both;
+	border: 0;
+	font-size: 12pt;
+	padding: 5px;
+}
