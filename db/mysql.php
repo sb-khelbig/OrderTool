@@ -176,3 +176,29 @@ function select($table, $conditions = array(), $fields = '*') {
 	
 	throw new MySQLError();
 }
+
+function build_select($table, $ids, $order_by = array()) {
+	$attributes = Attribute::filter(array('ref_table' => $table));
+
+	$select = array();
+	$atr_ids = array();
+	foreach ($attributes as $attribute) {
+		$id = $attribute->id;
+		$atr_ids[] = $id;
+		$select[] = "MAX(CASE WHEN v.attribute_id = '$attribute' THEN v.data END) AS '$id'";
+	}
+	
+	$order= '';
+	if ($order_by) {
+		$order = 'ORDER BY ' . join(', ', $order_by);
+	}
+
+	$query = "	SELECT v.ref_id, " . join(', ', $select) . "
+				FROM ot_value AS v
+				WHERE v.attribute_id IN (" . join(', ', $atr_ids) . ")
+				AND v.ref_id IN (" . join(', ', $ids) . ")
+				GROUP BY v.ref_id
+				$order";
+
+	return $query;
+}

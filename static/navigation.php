@@ -17,6 +17,8 @@
 		<ul>
 			<li><a href="<?php echo $root . '&ot=settings'; ?>" class="nav_cat">Einstellungen</a>
 				<ul>
+					<li><a href="<?php echo $root . '&ot=api'; ?>" class="nav_sub">APIs</a></li>
+					<li><a href="<?php echo $root . '&ot=data_source'; ?>" class="nav_sub">Datenquellen</a></li>
 					<li><a href="<?php echo $root . '&ot=settings&sub=status'; ?>" class="nav_sub">Status</a></li>
 					<li><a href="<?php echo $root . '&ot=settings&sub=attributes'; ?>" class="nav_sub">Attribute</a></li>
 					<li><a href="<?php echo $root . '&ot=settings&sub=attributeset'; ?>" class="nav_sub"><span style="font-size: 89%;">Attribut-Sets</span></a></li>
@@ -25,14 +27,6 @@
 		</ul>
 		<ul>
 			<li> <a href="<?php echo $root . '&ot=ticket'; ?>" class="nav_cat">Tickets</a>
-			</li>
-		</ul>
-		<ul>
-			<li> <a href="<?php echo $root . '&ot=api'; ?>" class="nav_cat">API</a>
-			</li>
-		</ul>
-		<ul>
-			<li> <a href="<?php echo $root . '&ot=data_source'; ?>" class="nav_cat">Datenquellen</a>
 			</li>
 		</ul>
 		<ul>

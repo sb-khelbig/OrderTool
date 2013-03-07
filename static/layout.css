@@ -128,20 +128,21 @@ body {
 	border-width: 0px;
 	border-bottom-width: 1px;
 	border-top-width: 1px;
-	text-align: center;
+	text-align: left;
 	white-space: nowrap;
 	background: #cccccc url(images/ui-bg_highlight-soft_75_cccccc_1x100.png) 50% 50% repeat-x;
+	height: 30px;
+	padding-left: 2px;
 }
 
-#orders .spacing {
-	border: 0px;
-	height: 5px;
-	
+#orders td div {
+	text-align: left;
 }
 
 #orders .spacing td {
 	border: 0px;
 	background: none;
+	height: 5px;
 }
 
 #additional {
