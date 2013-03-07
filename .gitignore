@@ -164,3 +164,6 @@ pip-log.txt
 
 # Uploaded files
 files
+
+# Test folder
+test
