@@ -1,7 +1,5 @@
 <?php
 
-$times = array('start' => microtime(TRUE));
-
 $query = "	SELECT id, short_name
 			FROM ot_attribute
 			WHERE opt_pos_in_overview > 0
@@ -15,11 +13,8 @@ while ($row = MySQL::fetch($result)) {
 	$attributes[$row['id']] = $row['short_name'];
 }
 
-$times['attributes loaded'] = microtime(TRUE);
-
 $query = "	SELECT *
-			FROM ot_order
-			LIMIT 29000, 200";
+			FROM ot_order";
 
 $result = MySQL::query($query);
 
@@ -31,42 +26,33 @@ while ($row = MySQL::fetch($result)) {
 	$customers[$row['customer_id']][] = $row['id'];
 }
 
-$times['orders selected'] = microtime(TRUE);
-
 $data = array();
 
-// Orders
-$query = build_select('ot_order', array_keys($orders));
-
-$result = MySQL::query($query);
-
-while ($row = MySQL::fetch($result)) {
-	foreach ($row as $key => $value) {
-		$data[$row['ref_id']][$key] = $value;
-	}
-}
-
-$times['orders loaded'] = microtime(TRUE);
-
-// Customers
-$query = build_select('ot_customer', array_keys($customers));
-
-$result = MySQL::query($query);
-
-while ($row = MySQL::fetch($result)) {
-	foreach ($customers[$row['ref_id']] as $order) {
+if ($orders) {
+	
+	// Orders
+	$query = build_select('ot_order', array_keys($orders));
+	
+	$result = MySQL::query($query);
+	
+	while ($row = MySQL::fetch($result)) {
 		foreach ($row as $key => $value) {
-			$data[$order][$key] = $value;
+			$data[$row['ref_id']][$key] = $value;
 		}
 	}
-} 
-
-$times['customers loaded'] = microtime(TRUE);
-
-$last = 0;
-foreach ($times as $name => $time) {
-	echo "$name: " . ($time-$last) . '<br>';
-	$last = $time;
+	
+	// Customers
+	$query = build_select('ot_customer', array_keys($customers));
+	
+	$result = MySQL::query($query);
+	
+	while ($row = MySQL::fetch($result)) {
+		foreach ($customers[$row['ref_id']] as $order) {
+			foreach ($row as $key => $value) {
+				$data[$order][$key] = $value;
+			}
+		}
+	} 
 } ?>
 
 <h1>Bestellungen</h1>

@@ -5,9 +5,9 @@ $user = 'ecommerce';
 $password = 'sFWe5ZWqfvTB4JKH';
 
 class MySQL {
-	private static $data;
-	private static $connection;
-	private static $errors = array();
+	protected static $data;
+	protected static $connection;
+	protected static $errors = array();
 	
 	public static function connect($host, $username, $password) {
 		static::$data = array(
@@ -99,6 +99,10 @@ class MySQL {
 	
 	public static function rollback() {
 		static::query("ROLLBACK");
+	}
+	
+	public static function get_data() {
+		return static::$data;
 	}
 }
 

@@ -416,6 +416,7 @@ class Order extends BaseTable {
 		return array(
 				'id' => new PrimaryKeyField(),
 				'customer' => new ForeignKeyField('customer_id', 'Customer'),
+				'data_source' => new ForeignKeyField('data_source_id', 'DataSource'),
 				'positions' => new BackLinkField($instance, 'order_id', 'Position', 'order'),
 				'attributes' => new AttributeValueField($instance),
 				'tickets' => new ReferenceLinkField($instance, 'Ticket', 'ref_table', 'ref_id'),
@@ -506,7 +507,7 @@ class AttributeSet extends BaseTable {
 class AttributeSetHasAttribute extends BaseTable {
 	protected static $table_name = 'ot_attribute_set_has_attribute';
 	protected static $member = array();
-	
+
 	protected static function getFields($instance = null) {
 		return array(
 				'id' => new PrimaryKeyField(),
@@ -515,6 +516,59 @@ class AttributeSetHasAttribute extends BaseTable {
 		);
 	}
 }
+
+class Product extends BaseTable {
+	protected static $table_name = 'ot_product';
+	protected static $member = array();
+
+	protected static function getFields($instance = null) {
+		return array(
+				'id' => new PrimaryKeyField(),
+				'name' => new CharField('name', 100),
+		);
+	}
+}
+
+class Supplier extends BaseTable {
+	protected static $table_name = 'ot_supplier';
+	protected static $member = array();
+	
+	protected static function getFields($instance = null) {
+		return array(
+				'id' => new PrimaryKeyField(),
+				'name' => new CharField('name', 100),
+		);
+	}
+}
+
+class Article extends BaseTable {
+	protected static $table_name = 'ot_article';
+	protected static $member = array();
+
+	protected static function getFields($instance = null) {
+		return array(
+				'id' => new PrimaryKeyField(),
+				'product' => new ForeignKeyField('product_id', 'Product'),
+				'supplier' => new ForeignKeyField('supplier_id', 'Supplier'),
+				'matching' => new BackLinkField($instance, 'article_id', 'ArticleHasDataSource', 'article'),
+		);
+	}
+}
+
+class ArticleHasDataSource extends BaseTable {
+	protected static $table_name = 'ot_article_has_data_source';
+	protected static $member = array();
+
+	protected static function getFields($instance = null) {
+		return array(
+				'id' => new PrimaryKeyField(),
+				'article' => new ForeignKeyField('article_id', 'Article'),
+				'data_source' => new ForeignKeyField('data_source_id', 'DataSource'),
+				'external_id' => new CharField('external_id', 50),
+		);
+	}
+}
+
 class Value extends BaseTable {
 	protected static $table_name = 'ot_value';
 	protected static $member = array();
@@ -594,7 +648,6 @@ class Value extends BaseTable {
 				return "<select $class name=\"attributes[$id]\">$options</select>";
 		}
 	}
-
 }
 
 class Table {

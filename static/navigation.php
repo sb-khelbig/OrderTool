@@ -26,6 +26,14 @@
 			</li>
 		</ul>
 		<ul>
+			<li> <a href="<?php echo $root . '&ot=products'; ?>" class="nav_cat">Produkte</a>
+				<ul>
+					<li><a href="<?php echo $root . '&ot=products&sub=suppliers'; ?>" class="nav_sub">Anbieter</a></li>
+					<li><a href="<?php echo $root . '&ot=products&sub=articles'; ?>" class="nav_sub">Artikel</a></li>					
+				</ul>
+			</li>
+		</ul>
+		<ul>
 			<li> <a href="<?php echo $root . '&ot=ticket'; ?>" class="nav_cat">Tickets</a>
 			</li>
 		</ul>
