@@ -43,7 +43,8 @@
 	$customer_billing_addresses = array();
 	$customer_shipping_addresses = array();
 	$order_positions = array();
-	
+	$billing_addresses_amount = array();
+		
 	//// FETCH ORDERS
 	$order_query = "
 	SELECT * FROM s_order
@@ -58,8 +59,10 @@
 		if (!array_key_exists($order["userID"], $customers))
 		{
 			$customers[$order["userID"]] = new Customer();
-			$orders[$order["id"]]->customer = $customers[$order["userID"]];
 		}
+		
+		$orders[$order["id"]]->customer = $customers[$order["userID"]];
+		
 		foreach ($attr_assoc["ot_order"] as $field_name => $attr)
 		{
 			if ($attr)
@@ -104,6 +107,7 @@
 		$customer_billing_address["state"] = $customer_billing_address["stateID"];
 		
 		$billing_address = new CustomerAddress();
+		$billing_addresses_amount[$customer_billing_address["id"]] = "";
 		$billing_address->type=0;
 		$customers[$customer_billing_address["userID"]]->addresses->add($billing_address);
 		foreach ($attr_assoc["ot_customer_address"] as $field_name => $attr)
@@ -209,9 +213,11 @@
 	echo "last_import_id: ".$last_import_id."<br>";
 	echo "orders: ".count($orders)."<br>";
 	echo "customers: ".count($customers)."<br>";
-	echo "customer_billing_addresses: ".count($customer_billing_addresses)."<br>";
+	echo "customer_billing_addresses: ".count($billing_addresses_amount)."<br>";
 	echo "customer_shipping_addresses: ".count($customer_shipping_addresses)."<br>";
 	echo "order_positions: ".count($order_positions)."<br>";
+	
+	var_dump($billing_addresses_amount);
 	
 	//header("Location: $referer#api_shopware_tabs_import");
 
