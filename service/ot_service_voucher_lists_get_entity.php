@@ -67,6 +67,5 @@
 		$('#import-csv-button').bind('click', function () {
 			dialog.dialog('open');
 		});
-	});
-			
+	});	
 </script>

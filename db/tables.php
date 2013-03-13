@@ -525,6 +525,46 @@ class Product extends BaseTable {
 		return array(
 				'id' => new PrimaryKeyField(),
 				'name' => new CharField('name', 100),
+				'attributes' => new BackLinkField($instance, 'product_id', 'ProductHasAttributeValue', 'product'),
+				'variants' => new BackLinkField($instance, 'product_id', 'ProductVariant', 'product'),
+		);
+	}
+}
+
+class ProductHasAttributeValue extends BaseTable {
+	protected static $table_name = 'ot_product_has_attribute_value';
+	protected static $member = array();
+
+	protected static function getFields($instance = null) {
+		return array(
+				'id' => new PrimaryKeyField(),
+				'product' => new ForeignKeyField('product_id', 'Product'),
+				'value' => new ForeignKeyField('value_id', 'Value'),
+		);
+	}
+}
+
+class ProductVariant extends BaseTable {
+	protected static $table_name = 'ot_product_variant';
+	protected static $member = array();
+	
+	protected static function getFields($instance = null) {
+		return array(
+				'id' => new PrimaryKeyField(),
+				'product' => new ForeignKeyField('product_id', 'Product'),
+		);
+	}
+}
+
+class ProductVariantHasPAV extends BaseTable {
+	protected static $table_name = 'ot_product_variant_has_pav';
+	protected static $member = array();
+	
+	protected static function getFields($instance = null) {
+		return array(
+				'id' => new PrimaryKeyField(),
+				'variant' => new ForeignKeyField('product_variant_id', 'ProductVariant'),
+				'pav' => new ForeignKeyField('pav_id', 'ProductHasAttributeValue'),
 		);
 	}
 }
@@ -676,7 +716,6 @@ class Value extends BaseTable {
 		}
 	}
 }
-
 
 class Table {
 	private static $members = array(
