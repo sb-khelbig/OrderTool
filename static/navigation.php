@@ -38,6 +38,13 @@
 			</li>
 		</ul>
 		<ul>
+			<li> <a href="<?php echo $root . '&ot=service'; ?>" class="nav_cat">Leistungen</a>
+				<ul>
+					<li><a href="<?php echo $root . '&ot=service&sub=voucher_lists'; ?>" class="nav_sub">Gutscheinlisten</a></li>				
+				</ul>
+			</li>
+		</ul>
+		<ul>
 			<li> <a href="<?php echo '?p=mails'; ?>" class="nav_cat">eMails</a>
 				<ul>
 					<li><a href="<?php echo $root . '&ot=mail&sub=accounts'; ?>" class="nav_sub">Accounts</a></li>

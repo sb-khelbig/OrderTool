@@ -569,6 +569,33 @@ class ArticleHasDataSource extends BaseTable {
 	}
 }
 
+class VoucherList extends BaseTable {
+	protected static $table_name = 'ot_voucher_list';
+	protected static $member = array();
+	
+	protected static function getFields($instance = null) {
+		return array(
+				'id' => new PrimaryKeyField(),
+				'name' => new CharField('name', 100),
+				'codes' => new BackLinkField($instance, 'voucher_list_id', 'VoucherCode', 'voucher_list'),
+		);
+	}
+}
+
+class VoucherCode extends BaseTable {
+	protected static $table_name = 'ot_voucher_code';
+	protected static $member = array();
+	
+	protected static function getFields($instance = null) {
+		return array(
+				'id' => new PrimaryKeyField(),
+				'voucher_list' => new ForeignKeyField('voucher_list_id', 'VoucherList'),
+				'code' => new CharField('code', 50),
+				'position' => new ForeignKeyField('position_id', 'Position'),
+		);
+	}
+}
+
 class Value extends BaseTable {
 	protected static $table_name = 'ot_value';
 	protected static $member = array();
@@ -649,6 +676,7 @@ class Value extends BaseTable {
 		}
 	}
 }
+
 
 class Table {
 	private static $members = array(
