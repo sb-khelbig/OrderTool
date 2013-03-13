@@ -18,7 +18,7 @@
 			"api_user" => "k.helbig",
 			"api_pass" => "124578aa",
 			"api_db"   => "shopware",
-			"last_import_id" => 0,
+			"last_import_id" => 9000,
 			"split_order_positions" => 1,
 			"assoc_vouchers" => 1
 			);
@@ -43,31 +43,34 @@
 	$customer_billing_addresses = array();
 	$customer_shipping_addresses = array();
 	$order_positions = array();
-	$billing_addresses_amount = array();
 		
 	//// FETCH ORDERS
 	$order_query = "
-	SELECT * FROM s_order
-	WHERE id > $last_import_id
-	AND ordernumber > 0
-	ORDER BY id ASC
+		SELECT * FROM s_order AS o
+		LEFT JOIN s_order_billingaddress AS a ON o.id = a.orderID
+		WHERE o.id > $last_import_id
+		AND o.ordernumber > 0
+		AND a.id != 'NULL'
+		ORDER BY o.id ASC
 	";
 	$order_result = mysql_query($order_query, $api_connid) OR die("Error: ".mysql_error());
 	while ($order = mysql_fetch_assoc($order_result))
 	{
-		$orders[$order["id"]] = new Order();
+		$orders[$order["orderID"]] = new Order();
+		$orders[$order["orderID"]]->data_source = $data_source;
+		 
 		if (!array_key_exists($order["userID"], $customers))
 		{
 			$customers[$order["userID"]] = new Customer();
 		}
 		
-		$orders[$order["id"]]->customer = $customers[$order["userID"]];
+		$orders[$order["orderID"]]->customer = $customers[$order["userID"]];
 		
 		foreach ($attr_assoc["ot_order"] as $field_name => $attr)
 		{
 			if ($attr)
 			{
-				$orders[$order["id"]]->attributes->add($attr, $order[$field_name]);
+				$orders[$order["orderID"]]->attributes->add($attr, $order[$field_name]);
 			}
 		}
 	}
@@ -97,7 +100,7 @@
 			"lastname" => $attr_assoc["ot_customer"]["lastname"],
 	);
 	$customer_billing_address_query = "
-	SELECT * FROM s_user_billingaddress WHERE userID IN (".join(",", array_keys($customers)).")
+	SELECT * FROM s_order_billingaddress WHERE orderID IN (".join(",", array_keys($orders)).")
 	";
 	$customer_billing_address_result = mysql_query($customer_billing_address_query, $api_connid) OR die("Error: ".mysql_error());
 	while ($customer_billing_address = mysql_fetch_assoc($customer_billing_address_result))
@@ -107,7 +110,6 @@
 		$customer_billing_address["state"] = $customer_billing_address["stateID"];
 		
 		$billing_address = new CustomerAddress();
-		$billing_addresses_amount[$customer_billing_address["id"]] = "";
 		$billing_address->type=0;
 		$customers[$customer_billing_address["userID"]]->addresses->add($billing_address);
 		foreach ($attr_assoc["ot_customer_address"] as $field_name => $attr)
@@ -140,7 +142,7 @@
 			"state" => $attr_assoc["ot_customer_address"]["state"]
 	);
 	$customer_shipping_address_query = "
-	SELECT * FROM s_user_shippingaddress WHERE userID IN (".join(",", array_keys($customers)).")
+	SELECT * FROM s_order_shippingaddress WHERE orderID IN (".join(",", array_keys($orders)).")
 	";
 	$customer_shipping_address_result = mysql_query($customer_shipping_address_query, $api_connid) OR die("Error: ".mysql_error());
 	while ($customer_shipping_address = mysql_fetch_assoc($customer_shipping_address_result))
@@ -204,7 +206,7 @@
 	$endtime = round(microtime(true),4);
 	
 	$starttime_save = round(microtime(true),4);
-	Order::bulk_save($orders);
+	//Order::bulk_save($orders);
 	$endtime_save = round(microtime(true),4);
 
 	//// DEBUG
@@ -213,11 +215,7 @@
 	echo "last_import_id: ".$last_import_id."<br>";
 	echo "orders: ".count($orders)."<br>";
 	echo "customers: ".count($customers)."<br>";
-	echo "customer_billing_addresses: ".count($billing_addresses_amount)."<br>";
-	echo "customer_shipping_addresses: ".count($customer_shipping_addresses)."<br>";
 	echo "order_positions: ".count($order_positions)."<br>";
-	
-	var_dump($billing_addresses_amount);
 	
 	//header("Location: $referer#api_shopware_tabs_import");
 
