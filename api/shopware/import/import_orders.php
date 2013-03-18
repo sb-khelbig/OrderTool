@@ -4,6 +4,7 @@
 	
 	$referer = $_SERVER["HTTP_REFERER"];
 	set_time_limit(0);
+	ini_set("memory_limit", "1024M") ;
 	
 	$starttime = round(microtime(true),4);
 	
@@ -18,7 +19,7 @@
 			"api_user" => "k.helbig",
 			"api_pass" => "124578aa",
 			"api_db"   => "shopware",
-			"last_import_id" => 10080,
+			"last_import_id" => 0,
 			"split_order_positions" => 1,
 			"assoc_vouchers" => 1
 			);
@@ -65,6 +66,7 @@
 		WHERE o.id > $last_import_id
 		AND o.ordernumber > 0
 		AND a.id != 'NULL'
+		AND a.userID != 'NULL'
 		ORDER BY o.id ASC
 	";
 	$order_result = mysql_query($order_query, $api_connid) OR die("Error: ".mysql_error());
@@ -91,7 +93,9 @@
 	
 	//// FETCH CUSTOMERS
 	$customer_query = "
-	SELECT * FROM s_user WHERE id IN (".join(",", array_keys($customers)).")
+	SELECT *
+	FROM s_user
+	WHERE id IN (".join(",", array_keys($customers)).")
 	";
 	$customer_result = mysql_query($customer_query, $api_connid) OR die("Error CUSTOMERFETCH: ".mysql_error());
 	while ($customer = mysql_fetch_assoc($customer_result))

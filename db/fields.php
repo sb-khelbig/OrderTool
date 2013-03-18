@@ -300,7 +300,7 @@ class BackLinkField extends BaseField {
 	}
 	
 	public function &all() {
-		if ($this->data['owner']->isLoaded() || $this->data['owner']->isSaved()) {
+		if ($this->data['owner']->isLoaded()) {
 			$class = $this->data['class_name'];
 			$this->members = $class::filter(array($this->data['owner_field_name'] => $this->data['owner']->id));
 		}
