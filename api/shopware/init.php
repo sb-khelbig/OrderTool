@@ -51,7 +51,8 @@ $attribute_array = array(
 				"quantity" => "Anzahl",
 				"name" => "Artikelname",
 				"modus" => "Modus",
-				"tax_rate" => "MwSt. Satz"
+				"tax_rate" => "MwSt. Satz",
+				"voucher_code" => "Gutscheincode",
 		)
 );
 

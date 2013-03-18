@@ -106,7 +106,7 @@ abstract class BaseTable {
 			}
 		}
 		
-		if (!$recursion) mysql_query("START TRANSACTION");
+		if (!$recursion) MySQL::start_transaction();
 		
 		$recursion[] = get_called_class();
 		
@@ -183,7 +183,7 @@ abstract class BaseTable {
 						
 						if (count($recursion) == 1) {
 							Value::save_new();
-							mysql_query("COMMIT");
+							MySQL::commit();
 						}
 					} else {
 						throw new MySQLError();
@@ -631,6 +631,7 @@ class VoucherList extends BaseTable {
 	protected static function getFields($instance = null) {
 		return array(
 				'id' => new PrimaryKeyField(),
+				'data_source' => new ForeignKeyField('data_source_id', 'DataSource'),
 				'name' => new CharField('name', 100),
 				'codes' => new BackLinkField($instance, 'voucher_list_id', 'VoucherCode', 'voucher_list'),
 		);

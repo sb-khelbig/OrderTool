@@ -2,8 +2,22 @@
 
 <h1><?php echo $voucher_list->name; ?></h1>
 
-<form>
-	<input type="hidden" name="action" value="import" />
+<form></form>
+
+<form action="<?php echo $ot->get_link('service', $voucher_list->id, 'voucher_lists'); ?>" method="POST" enctype="multipart/form-data">
+	<input type="hidden" name="action" value="save" />
+	<fieldset>
+		<legend>Einstellungen</legend>
+		<label for="data_source">Datenquelle: </label>
+		<select name="data_source">
+			<option value="0">Wählen...</option>
+			<?php foreach (DataSource::all() as $ds): ?>
+				<?php $selected = ($ds->id == $voucher_list->data_source->id) ? 'selected="selected"' : ''; ?>
+				<option value="<?php echo $ds->id; ?>" <?php echo $selected; ?>><?php echo $ds->name; ?></option>
+			<?php endforeach; ?>
+		</select>
+		<input type="submit" value="Speichern" />
+	</fieldset>
 	<fieldset>
 		<legend>Import</legend>
 		<input id="import-csv-button" type="button" name="source" value="CSV-Datei" />

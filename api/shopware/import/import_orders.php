@@ -18,7 +18,7 @@
 			"api_user" => "k.helbig",
 			"api_pass" => "124578aa",
 			"api_db"   => "shopware",
-			"last_import_id" => 9000,
+			"last_import_id" => 10080,
 			"split_order_positions" => 1,
 			"assoc_vouchers" => 1
 			);
@@ -45,30 +45,17 @@
 	$order_positions = array();
 	
 	//// FUNCTIONS
-	function add_order_position($position_row_assoc, $attr_assoc, &$orders, &$order_positions)
-	{
-		if ($position_row_assoc["modus"] == 2 && $position_row_assoc["restrictarticles"] != "NULL") // Position is a Voucher
-		{
-			$articles = explode(";", $position_row_assoc["restrictarticles"]);
-			foreach ($order_positions[$position_row_assoc["orderID"]] as $position)
-			{
-				var_dump($order_positions[$position_row_assoc["orderID"]]);
-			}
-			var_dump($articles);
-			echo "<br>######################<br>";
-		}
-		else
-		{
-			$order_positions[$position_row_assoc["orderID"]][$position_row_assoc["id"]] = new Position();
-			$orders[$position_row_assoc["orderID"]]->positions->add($order_positions[$position_row_assoc["orderID"]][$position_row_assoc["id"]]);
-			foreach ($attr_assoc["ot_position"] as $field_name => $attr)
-			{
-				if ($attr)
-				{
+	function add_order_position($position_row_assoc, $attr_assoc, &$orders, &$order_positions) {
+		$order_positions[$position_row_assoc["orderID"]][$position_row_assoc["id"]] = new Position();
+		$orders[$position_row_assoc["orderID"]]->positions->add($order_positions[$position_row_assoc["orderID"]][$position_row_assoc["id"]]);
+		foreach ($attr_assoc["ot_position"] as $field_name => $attr) {
+			if ($attr) {
+				if (isset($position_row_assoc[$field_name])) {
 					$order_positions[$position_row_assoc["orderID"]][$position_row_assoc["id"]]->attributes->add($attr, $position_row_assoc[$field_name]);
 				}
 			}
 		}
+		return $order_positions[$position_row_assoc["orderID"]][$position_row_assoc["id"]];
 	}
 		
 	//// FETCH ORDERS
@@ -192,26 +179,46 @@
 
 	//// ORDER POSITIONS
 	$order_positions_query = "
-	SELECT position.*, voucher.restrictarticles FROM s_order_details AS position
-	LEFT JOIN s_emarketing_voucher_codes AS code ON (position.articleID = code.id)
-	LEFT JOIN s_emarketing_vouchers AS voucher ON (code.voucherID = voucher.id)
-	WHERE orderID in (".join(",", array_keys($orders)).")
-	";
+	SELECT position.*, voucher.restrictarticles, code.code
+	FROM s_order_details AS position
+	LEFT JOIN s_emarketing_voucher_codes AS code
+			ON (position.articleID = code.id)
+	LEFT JOIN s_emarketing_vouchers AS voucher
+			ON (code.voucherID = voucher.id)
+	WHERE orderID IN (".join(",", array_keys($orders)).")
+	ORDER BY orderID";
+	
 	$order_positions_result = mysql_query($order_positions_query, $api_connid) OR die("Error: ".mysql_error());
+	
+	$articles = array();
 	while ($s_order_details_row = mysql_fetch_assoc($order_positions_result))
 	{
-		// SPLIT ORDER POSITIONS IF AMOUNT > 1
-		if ($options["split_order_positions"] == 1)
-		{
-			for ($i = 0; $i < $s_order_details_row["quantity"]; $i++)
-			{
-				$s_order_details_row["quantity"] = "1";
-				add_order_position($s_order_details_row, $attr_assoc, $orders, $order_positions);
+		if ($s_order_details_row['modus'] == 2) { // Voucher
+			if ($s_order_details_row["restrictarticles"] != "NULL") {
+				foreach (explode(";", $s_order_details_row["restrictarticles"]) as $article) {
+					if (array_key_exists($article, $articles[$s_order_details_row['orderID']])) {
+						$articles[$s_order_details_row['orderID']][$article]->attributes->add($attr_assoc['ot_position']['voucher_code'], $s_order_details_row['code']);
+						break;
+					}
+				}
+			} else {  // Warenkorbgutschein
+				//TODO: Warenkorbgutscheine behandeln
 			}
-		}
-		else
-		{
-			add_order_position($s_order_details_row, $attr_assoc, $orders, $order_positions);
+		} else { // Article
+			
+			// SPLIT ORDER POSITIONS IF AMOUNT > 1
+			if ($options["split_order_positions"] == 1) {
+				$quantity = $s_order_details_row["quantity"];
+				$s_order_details_row["quantity"] = "1";
+					
+				for ($i = 0; $i < $quantity; $i++) {
+					$current = add_order_position($s_order_details_row, $attr_assoc, $orders, $order_positions);
+				}
+			} else {
+				$current = add_order_position($s_order_details_row, $attr_assoc, $orders, $order_positions);
+			}
+			
+			$articles[$s_order_details_row['orderID']][$s_order_details_row['articleordernumber']] = $current;
 		}
 	}
 		
@@ -219,7 +226,7 @@
 	$endtime = round(microtime(true),4);
 	
 	$starttime_save = round(microtime(true),4);
-	//Order::bulk_save($orders);
+	Order::bulk_save($orders);
 	$endtime_save = round(microtime(true),4);
 
 	//// DEBUG
