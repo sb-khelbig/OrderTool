@@ -43,6 +43,33 @@
 	$customer_billing_addresses = array();
 	$customer_shipping_addresses = array();
 	$order_positions = array();
+	
+	//// FUNCTIONS
+	function add_order_position($position_row_assoc, $attr_assoc, &$orders, &$order_positions)
+	{
+		if ($position_row_assoc["modus"] == 2 && $position_row_assoc["restrictarticles"] != "NULL") // Position is a Voucher
+		{
+			$articles = explode(";", $position_row_assoc["restrictarticles"]);
+			foreach ($order_positions[$position_row_assoc["orderID"]] as $position)
+			{
+				var_dump($order_positions[$position_row_assoc["orderID"]]);
+			}
+			var_dump($articles);
+			echo "<br>######################<br>";
+		}
+		else
+		{
+			$order_positions[$position_row_assoc["orderID"]][$position_row_assoc["id"]] = new Position();
+			$orders[$position_row_assoc["orderID"]]->positions->add($order_positions[$position_row_assoc["orderID"]][$position_row_assoc["id"]]);
+			foreach ($attr_assoc["ot_position"] as $field_name => $attr)
+			{
+				if ($attr)
+				{
+					$order_positions[$position_row_assoc["orderID"]][$position_row_assoc["id"]]->attributes->add($attr, $position_row_assoc[$field_name]);
+				}
+			}
+		}
+	}
 		
 	//// FETCH ORDERS
 	$order_query = "
@@ -165,7 +192,10 @@
 
 	//// ORDER POSITIONS
 	$order_positions_query = "
-	SELECT * FROM s_order_details WHERE orderID in (".join(",", array_keys($orders)).")
+	SELECT position.*, voucher.restrictarticles FROM s_order_details AS position
+	LEFT JOIN s_emarketing_voucher_codes AS code ON (position.articleID = code.id)
+	LEFT JOIN s_emarketing_vouchers AS voucher ON (code.voucherID = voucher.id)
+	WHERE orderID in (".join(",", array_keys($orders)).")
 	";
 	$order_positions_result = mysql_query($order_positions_query, $api_connid) OR die("Error: ".mysql_error());
 	while ($s_order_details_row = mysql_fetch_assoc($order_positions_result))
@@ -176,29 +206,12 @@
 			for ($i = 0; $i < $s_order_details_row["quantity"]; $i++)
 			{
 				$s_order_details_row["quantity"] = "1";
-				$order_position = new Position();
-				$orders[$s_order_details_row["orderID"]]->positions->add($order_position);
-				foreach ($attr_assoc["ot_position"] as $field_name => $attr)
-				{
-					if ($attr)
-					{
-						$order_position->attributes->add($attr, $s_order_details_row[$field_name]);
-					}
-				}
+				add_order_position($s_order_details_row, $attr_assoc, $orders, $order_positions);
 			}
 		}
 		else
 		{
-			$order_position = new Position();
-			$orders[$s_order_details_row["orderID"]]->positions->add($order_position);
-			
-			foreach ($attr_assoc["ot_position"] as $field_name => $attr)
-			{
-				if ($attr)
-				{
-					$order_position->attributes->add($attr, $s_order_details_row[$field_name]);
-				}
-			}			
+			add_order_position($s_order_details_row, $attr_assoc, $orders, $order_positions);
 		}
 	}
 		
@@ -215,7 +228,7 @@
 	echo "last_import_id: ".$last_import_id."<br>";
 	echo "orders: ".count($orders)."<br>";
 	echo "customers: ".count($customers)."<br>";
-	echo "order_positions: ".count($order_positions)."<br>";
+	echo "orders in postition_array: ".count($order_positions)."<br>";
 	
 	//header("Location: $referer#api_shopware_tabs_import");
 
