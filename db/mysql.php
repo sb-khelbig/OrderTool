@@ -66,6 +66,8 @@ class MySQL {
 	}
 	
 	public static function query($query, $error = TRUE) {
+		//echo $query;
+		
 		if ($result = mysql_query($query, static::get_connection())) {
 			return $result;
 		} else {

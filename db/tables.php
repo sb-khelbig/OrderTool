@@ -552,6 +552,7 @@ class ProductVariant extends BaseTable {
 		return array(
 				'id' => new PrimaryKeyField(),
 				'product' => new ForeignKeyField('product_id', 'Product'),
+				'pavs' => new BackLinkField($instance, 'product_variant_id', 'ProductVariantHasPAV', 'variant'),
 		);
 	}
 }
@@ -581,8 +582,8 @@ class Supplier extends BaseTable {
 	}
 }
 
-class Article extends BaseTable {
-	protected static $table_name = 'ot_article';
+class Offer extends BaseTable {
+	protected static $table_name = 'ot_product_offer';
 	protected static $member = array();
 
 	protected static function getFields($instance = null) {
@@ -590,21 +591,35 @@ class Article extends BaseTable {
 				'id' => new PrimaryKeyField(),
 				'product' => new ForeignKeyField('product_id', 'Product'),
 				'supplier' => new ForeignKeyField('supplier_id', 'Supplier'),
-				'matching' => new BackLinkField($instance, 'article_id', 'ArticleHasDataSource', 'article'),
+				'matching' => new BackLinkField($instance, 'offer_id', 'OfferHasDataSource', 'offer'),
+				'variants' => new BackLinkField($instance, 'offer_id', 'OfferHasVariant', 'offer'),
 		);
 	}
 }
 
-class ArticleHasDataSource extends BaseTable {
-	protected static $table_name = 'ot_article_has_data_source';
+class OfferHasDataSource extends BaseTable {
+	protected static $table_name = 'ot_product_offer_has_data_source';
 	protected static $member = array();
 
 	protected static function getFields($instance = null) {
 		return array(
 				'id' => new PrimaryKeyField(),
-				'article' => new ForeignKeyField('article_id', 'Article'),
+				'offer' => new ForeignKeyField('offer_id', 'Offer'),
 				'data_source' => new ForeignKeyField('data_source_id', 'DataSource'),
 				'external_id' => new CharField('external_id', 50),
+		);
+	}
+}
+
+class OfferHasVariant extends BaseTable {
+	protected static $table_name = 'ot_product_offer_has_variant';
+	protected static $member = array();
+	
+	protected static function getFields($instance = null) {
+		return array(
+				'id' => new PrimaryKeyField(),
+				'offer' => new ForeignKeyField('offer_id', 'Offer'),
+				'variant' => new ForeignKeyField('variant_id', 'ProductVariant'),
 		);
 	}
 }

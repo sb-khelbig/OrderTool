@@ -30,7 +30,7 @@
 				<ul>
 					<li><a href="<?php echo $root . '&ot=products&sub=attributes'; ?>" class="nav_sub">Attribute</a></li>
 					<li><a href="<?php echo $root . '&ot=products&sub=suppliers'; ?>" class="nav_sub">Anbieter</a></li>
-					<li><a href="<?php echo $root . '&ot=products&sub=articles'; ?>" class="nav_sub">Artikel</a></li>					
+					<li><a href="<?php echo $root . '&ot=products&sub=offers'; ?>" class="nav_sub">Angebote</a></li>					
 				</ul>
 			</li>
 		</ul>

@@ -1,9 +1,9 @@
 <?php
 $data = array(
 		'module' => 'products',
-		'sub' => 'articles',
-		'title' => 'Artikel',
-		'title_plural' => 'Artikel',
+		'sub' => 'offers',
+		'title' => 'Angebot',
+		'title_plural' => 'Angebote',
 	);
 
 $fields = array(
@@ -13,7 +13,7 @@ $fields = array(
 			),
 	);
 
-$objects = Article::all(); ?>
+$objects = Offer::all(); ?>
 
 <?php include 'functions/ot_show_overview.php'; ?>
 
