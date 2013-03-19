@@ -10,6 +10,9 @@ while ($row = mysql_fetch_assoc($result)) {
 	$entries[$row['id']] = $row;
 }
 
+$order_data = array();
+$order_list_data = array();
+
 /*
 if ($ticket['ref_table'] == 'ot_row') {
 	$result = mysql_query("	SELECT c.id, h.name, c.data

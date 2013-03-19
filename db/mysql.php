@@ -65,6 +65,10 @@ class MySQL {
 		return TRUE;
 	}
 	
+	public static function escape($string) {
+		return mysql_real_escape_string($string, static::get_connection());
+	}
+	
 	public static function query($query, $error = TRUE) {
 		//echo $query;
 		
@@ -126,10 +130,10 @@ class MySQLError extends Exception {
 function get_row_by_id($id, $table, $exception = TRUE, $identifier='id') {
 	$query = "	SELECT *
 				FROM $table
-				WHERE $identifier = '$id'";
+				WHERE $identifier = '" . MySQL::escape($id) . "'";
 	
 	if ($result = MySQL::query($query)) {
-		switch (mysql_num_rows($result)) {
+		switch (MySQL::num_rows($result)) {
 			case 0:
 				if ($exception) throw new MySQLError("$identifier '$id' in table '$table' does not exist!", 0);
 				return array();

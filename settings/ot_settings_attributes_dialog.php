@@ -6,8 +6,8 @@
 			<input type="text" name="name" /> <br />
 			<label for="ref_table">Tabelle: </label>
 			<select name="ref_table">
-				<?php foreach (Table::all() as $name => $title): ?>
-					<option value="<?php echo $name; ?>"><?php echo $title; ?></option>
+				<?php foreach (Table::all() as $table => $class): ?>
+					<option value="<?php echo $table; ?>"><?php echo $class::getTitle(FALSE); ?></option>
 				<?php endforeach; ?>
 			</select> <br />
 			<label for="type">Typ: </label>

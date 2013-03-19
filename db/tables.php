@@ -3,11 +3,23 @@
 abstract class BaseTable {
 	
 	// Static
-	protected static $table_name = '';
+	protected static $data = array(
+			'table' => '',
+			'title' => '',
+			'title_plural' => '',
+		);
+	
 	protected static $member = array();
 	
 	public static function getTableName() {
-		return static::$table_name;
+		return static::$data['table'];
+	}
+	
+	public static function getTitle($plural = TRUE) {
+		if ($plural) {
+			return static::$data['title_plural'];
+		}
+		return static::$data['title'];
 	}
 	
 	protected static function getFields($instance = null) {
@@ -197,6 +209,39 @@ abstract class BaseTable {
 		}
 	}
 	
+	public static function create_dropdown_menu($name = '', $initial = '', $selected = 0, $class = '', $conditions = array()) {
+		
+		if ($conditions) {
+			$objects = static::filter($conditions);
+		} else {
+			$objects = static::all();
+		}
+		
+		$name = ($name) ? $name : static::getTableName();
+		$class = ($class) ? "class=\"$class\"" : '';
+		
+		$select[] = "<select name=\"$name\" $class>";
+		
+		if ($initial) {
+			$select[] = '<option value="0">';
+			$select[] = $initial;
+			$select[] = '</option>';
+		}
+		
+		if (is_object($selected)) {
+			$selected = $selected->id;
+		}
+		
+		foreach ($objects as $obj) {
+			$sel = ($selected == $obj->id) ? 'selected="selected"' : '';
+			$select[] = '<option value="' . $obj->id . "\" $sel>";
+			$select[] = $obj->name;
+			$select[] = '</option>';
+		}
+		
+		return join('', $select);
+	}
+	
 	// NonStatic
 	protected $fields;
 	protected $status = 'new';
@@ -308,7 +353,12 @@ abstract class BaseTable {
 }
 
 class API extends BaseTable {
-	protected static $table_name = 'ot_api';
+	protected static $data = array(
+			'table' => 'ot_api',
+			'title' => '',
+			'title_plural' => '',
+	);
+
 	protected static $member = array();
 
 	protected static function getFields($instance = null) {
@@ -320,7 +370,12 @@ class API extends BaseTable {
 }
 
 class Customer extends BaseTable {
-	protected static $table_name = 'ot_customer';
+	protected static $data = array(
+			'table' => 'ot_customer',
+			'title' => 'Kunde',
+			'title_plural' => 'Kunden',
+	);
+
 	protected static $member = array();
 	
 	protected static function getFields($instance = null) {
@@ -334,7 +389,12 @@ class Customer extends BaseTable {
 }
 
 class CustomerAddress extends BaseTable {
-	protected static $table_name = 'ot_customer_address';
+	protected static $data = array(
+			'table' => 'ot_customer_address',
+			'title' => 'Adresse',
+			'title_plural' => 'Adressen',
+	);
+
 	protected static $member = array();
 
 	protected static function getFields($instance = null) {
@@ -348,7 +408,12 @@ class CustomerAddress extends BaseTable {
 }
 
 class DataSource extends BaseTable {
-	protected static $table_name = 'ot_data_source';
+	protected static $data = array(
+			'table' => 'ot_data_source',
+			'title' => '',
+			'title_plural' => '',
+	);
+
 	protected static $member = array();
 	
 	protected static function getFields($instance = null) {
@@ -379,7 +444,12 @@ class DataSource extends BaseTable {
 }
 
 class DataSourceOption extends BaseTable {
-	protected static $table_name = 'ot_data_source_option';
+	protected static $data = array(
+			'table' => 'ot_data_source_option',
+			'title' => '',
+			'title_plural' => '',
+	);
+
 	protected static $member = array();
 	
 	protected static function getFields($instance = null) {
@@ -393,7 +463,12 @@ class DataSourceOption extends BaseTable {
 }
 
 class DataSourceHasAttribute extends BaseTable {
-	protected static $table_name = 'ot_data_source_has_attribute';
+	protected static $data = array(
+			'table' => 'ot_data_source_has_attribute',
+			'title' => '',
+			'title_plural' => '',
+	);
+
 	protected static $member = array();
 	
 	protected static function getFields($instance = null) {
@@ -409,7 +484,12 @@ class DataSourceHasAttribute extends BaseTable {
 }
 
 class Order extends BaseTable {
-	protected static $table_name = 'ot_order';
+	protected static $data = array(
+			'table' => 'ot_order',
+			'title' => 'Bestellung',
+			'title_plural' => 'Bestellungen',
+	);
+
 	protected static $member = array();
 
 	protected static function getFields($instance = null) {
@@ -425,7 +505,12 @@ class Order extends BaseTable {
 }
 
 class Position extends BaseTable {
-	protected static $table_name = 'ot_position';
+	protected static $data = array(
+			'table' => 'ot_position',
+			'title' => 'Position',
+			'title_plural' => 'Positionen',
+	);
+
 	protected static $member = array();
 	
 	protected static function getFields($instance = null) {
@@ -438,7 +523,12 @@ class Position extends BaseTable {
 }
 
 class Ticket extends BaseTable {
-	protected static $table_name = 'ot_ticket';
+	protected static $data = array(
+			'table' => 'ot_ticket',
+			'title' => '',
+			'title_plural' => '',
+	);
+
 	protected static $member = array();
 
 	protected static function getFields($instance = null) {
@@ -459,7 +549,12 @@ class Ticket extends BaseTable {
 }
 
 class TicketCategory extends BaseTable {
-	protected static $table_name = 'ot_ticket';
+	protected static $data = array(
+			'table' => 'ot_ticket_category',
+			'title' => '',
+			'title_plural' => '',
+	);
+
 	protected static $member = array();
 	
 	protected static function getFields($instance = null) {
@@ -471,13 +566,19 @@ class TicketCategory extends BaseTable {
 }
 
 class Attribute extends BaseTable {
-	protected static $table_name = 'ot_attribute';
+	protected static $data = array(
+			'table' => 'ot_attribute',
+			'title' => '',
+			'title_plural' => '',
+	);
+
 	protected static $member = array();
 	
 	protected static function getFields($instance = null) {
 		return array(
 				'id' => new PrimaryKeyField(),
 				'name' => new CharField('name', 75),
+				'short_name' => new CharField('short_name', 20),
 				'ref_table' => new CharField('ref_table', 50),
 				'type' => new IntegerField('type'),
 		);
@@ -492,7 +593,12 @@ class Attribute extends BaseTable {
 }
 
 class AttributeSet extends BaseTable {
-	protected static $table_name = 'ot_attribute_set';
+	protected static $data = array(
+			'table' => 'ot_attribute_set',
+			'title' => '',
+			'title_plural' => '',
+	);
+
 	protected static $member = array();
 	
 	protected static function getFields($instance = null) {
@@ -505,7 +611,12 @@ class AttributeSet extends BaseTable {
 }
 
 class AttributeSetHasAttribute extends BaseTable {
-	protected static $table_name = 'ot_attribute_set_has_attribute';
+	protected static $data = array(
+			'table' => 'ot_attribute_set_has_attribute',
+			'title' => '',
+			'title_plural' => '',
+	);
+
 	protected static $member = array();
 
 	protected static function getFields($instance = null) {
@@ -518,7 +629,12 @@ class AttributeSetHasAttribute extends BaseTable {
 }
 
 class Product extends BaseTable {
-	protected static $table_name = 'ot_product';
+	protected static $data = array(
+			'table' => 'ot_product',
+			'title' => '',
+			'title_plural' => '',
+	);
+
 	protected static $member = array();
 
 	protected static function getFields($instance = null) {
@@ -532,7 +648,12 @@ class Product extends BaseTable {
 }
 
 class ProductHasAttributeValue extends BaseTable {
-	protected static $table_name = 'ot_product_has_attribute_value';
+	protected static $data = array(
+			'table' => 'ot_product_has_attribute_value',
+			'title' => '',
+			'title_plural' => '',
+	);
+
 	protected static $member = array();
 
 	protected static function getFields($instance = null) {
@@ -545,7 +666,12 @@ class ProductHasAttributeValue extends BaseTable {
 }
 
 class ProductVariant extends BaseTable {
-	protected static $table_name = 'ot_product_variant';
+	protected static $data = array(
+			'table' => 'ot_product_variant',
+			'title' => '',
+			'title_plural' => '',
+	);
+
 	protected static $member = array();
 	
 	protected static function getFields($instance = null) {
@@ -558,7 +684,12 @@ class ProductVariant extends BaseTable {
 }
 
 class ProductVariantHasPAV extends BaseTable {
-	protected static $table_name = 'ot_product_variant_has_pav';
+	protected static $data = array(
+			'table' => 'ot_product_variant_has_pav',
+			'title' => '',
+			'title_plural' => '',
+	);
+
 	protected static $member = array();
 	
 	protected static function getFields($instance = null) {
@@ -571,7 +702,12 @@ class ProductVariantHasPAV extends BaseTable {
 }
 
 class Supplier extends BaseTable {
-	protected static $table_name = 'ot_supplier';
+	protected static $data = array(
+			'table' => 'ot_supplier',
+			'title' => '',
+			'title_plural' => '',
+	);
+
 	protected static $member = array();
 	
 	protected static function getFields($instance = null) {
@@ -583,7 +719,12 @@ class Supplier extends BaseTable {
 }
 
 class Offer extends BaseTable {
-	protected static $table_name = 'ot_product_offer';
+	protected static $data = array(
+			'table' => 'ot_product_offer',
+			'title' => '',
+			'title_plural' => '',
+	);
+
 	protected static $member = array();
 
 	protected static function getFields($instance = null) {
@@ -598,7 +739,12 @@ class Offer extends BaseTable {
 }
 
 class OfferHasDataSource extends BaseTable {
-	protected static $table_name = 'ot_product_offer_has_data_source';
+	protected static $data = array(
+			'table' => 'ot_product_offer_has_data_source',
+			'title' => '',
+			'title_plural' => '',
+	);
+
 	protected static $member = array();
 
 	protected static function getFields($instance = null) {
@@ -612,7 +758,12 @@ class OfferHasDataSource extends BaseTable {
 }
 
 class OfferHasVariant extends BaseTable {
-	protected static $table_name = 'ot_product_offer_has_variant';
+	protected static $data = array(
+			'table' => 'ot_product_offer_has_variant',
+			'title' => '',
+			'title_plural' => '',
+	);
+
 	protected static $member = array();
 	
 	protected static function getFields($instance = null) {
@@ -625,7 +776,12 @@ class OfferHasVariant extends BaseTable {
 }
 
 class VoucherList extends BaseTable {
-	protected static $table_name = 'ot_voucher_list';
+	protected static $data = array(
+			'table' => 'ot_voucher_list',
+			'title' => '',
+			'title_plural' => '',
+	);
+
 	protected static $member = array();
 	
 	protected static function getFields($instance = null) {
@@ -639,7 +795,12 @@ class VoucherList extends BaseTable {
 }
 
 class VoucherCode extends BaseTable {
-	protected static $table_name = 'ot_voucher_code';
+	protected static $data = array(
+			'table' => 'ot_voucher_code',
+			'title' => '',
+			'title_plural' => '',
+	);
+
 	protected static $member = array();
 	
 	protected static function getFields($instance = null) {
@@ -653,7 +814,12 @@ class VoucherCode extends BaseTable {
 }
 
 class Value extends BaseTable {
-	protected static $table_name = 'ot_value';
+	protected static $data = array(
+			'table' => 'ot_value',
+			'title' => '',
+			'title_plural' => '',
+	);
+
 	protected static $member = array();
 	
 	private static $new = array();
@@ -735,15 +901,15 @@ class Value extends BaseTable {
 
 class Table {
 	private static $members = array(
-			'ot_order' => 'Bestellungen',
-			'ot_position' => 'Positionen',
-			'ot_customer' => 'Kunden',
-			'ot_customer_address' => 'Adressen',
+			'ot_order' => 'Order',
+			'ot_position' => 'Position',
+			'ot_customer' => 'Customer',
+			'ot_customer_address' => 'CustomerAddress',
 		);
 	
-	public static function get($name) {
-		if (!array_key_exists($name, static::$members)) {
-			return static::$members[$name];
+	public static function get($table) {
+		if (array_key_exists($name, static::$members)) {
+			return static::$members[$table];
 		}
 		return FALSE;
 	}

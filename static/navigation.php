@@ -36,6 +36,9 @@
 		</ul>
 		<ul>
 			<li> <a href="<?php echo $root . '&ot=ticket'; ?>" class="nav_cat">Tickets</a>
+				<ul>
+					<li><a href="<?php echo $root . '&ot=ticket&sub=category'; ?>" class="nav_sub">Kategorie</a></li>
+				</ul>
 			</li>
 		</ul>
 		<ul>

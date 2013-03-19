@@ -1,6 +1,8 @@
-<?php include '../db/mysql.php'; include '../db/tables.php';
+<?php ob_start();
 
-$json = array('error' => FALSE, 'errorMsg' => 'Unbekannter Fehler');
+include '../db/mysql.php'; include '../db/tables.php';
+
+$json = array('error' => TRUE, 'errorMsg' => 'Unbekannter Fehler');
 
 switch ($_GET['action']) {
 	case 'load':
@@ -35,6 +37,15 @@ switch ($_GET['action']) {
 				$content[] = '<ul>';
 				foreach ($customer_atrs as $atr) {
 					$content[] = '<li>';
+						if ($atr->attribute->name == 'Vorname') {
+							$ticket_data['inquirer_first_name'] = $atr->data;
+						} elseif ($atr->attribute->name == 'Nachname') {
+							$ticket_data['inquirer_last_name'] = $atr->data;
+						} elseif ($atr->attribute->name == 'E-Mail Adresse') {
+							$ticket_data['inquirer_mail'] = $atr->data;
+						} elseif ($atr->attribute->name == 'Anrede') {
+							$ticket_data['inquirer_title'] = ($atr->data == 'ms') ? 2 : 1;
+						}
 						$content[] = $atr->attribute->name . ': ' . $atr->data;
 					$content[] = '</li>';
 				}
@@ -53,20 +64,40 @@ switch ($_GET['action']) {
 		$id = 'positions_' . $order->id;
 		$content = array();
 		if ($objects = $positions) {
-			$content[] = '<table>';
+			$attributes = array('ID' => 'ID');
+			$rows = array();
 			foreach ($objects as $entity) {
-				$content[] = '<tr>';
-					$content[] = '<td>';
-						$content[] = $entity->id;
-					$content[] = '</td>';
-					foreach ($entity->attributes->all() as $atr) {
-						$content[] = '<td>';
-							$content[] = $atr->data;
-						$content[] = '</td>';
+				$rows[$entity->id]['ID'] = $entity->id;
+				foreach ($entity->attributes->all() as $atr) {
+					if (!array_key_exists($atr->attribute->id, $attributes)) {
+						$attributes[$atr->attribute->id] = $atr->attribute->short_name;
 					}
+					$rows[$entity->id][$atr->attribute->id] = $atr->data;
+				}
+				$ticket_data['ref_id'] = $entity->id;
+				$ticket_data['ref_table'] = 'ot_position';
+				$rows[$entity->id]['ticket'] = '<button onclick=fill_dialog(' . json_encode($ticket_data) . ')>Ticket</button>';
+
+			}
+			$content[] = '<table class="position-table"><thead><tr>';
+			$attributes['ticket'] = 'Ticket';
+			foreach ($attributes as $atr_id => $atr_name) {
+				$content[] = '<th>' . $atr_name . '</th>';
+			}
+			$content[] = '</tr></thead><tbody>';
+			foreach ($rows as $entity_id => $row) {
+				$content[] = '<tr>';
+				foreach ($attributes as $atr_id => $atr_name) {
+					if (array_key_exists($atr_id, $row)) {
+						$content[] = "<td>$row[$atr_id]</td>";
+					} else {
+						$content[] = "<td>&nbsp;</td>";
+					}
+				}
 				$content[] = '</tr>';
 			}
-			$content[] = '</table>';
+			$content[] = '</tbody></table>';
+			
 		} else {
 			$content[] = '<p>Keine Positionen vorhanden</p>';
 		}
@@ -96,6 +127,13 @@ switch ($_GET['action']) {
 		
 		$json['error'] = FALSE;
 		break;
+}
+
+$errorMsg = ob_get_clean();
+
+if ($errorMsg) {
+	$json['error'] = TRUE;
+	$json['errorMsg'] = $errorMsg;
 }
 
 echo json_encode($json);

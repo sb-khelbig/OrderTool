@@ -1,20 +1,25 @@
 <?php
 $status_codes = array(0 => 'Offen', 1 => 'Beantwortet', 2 => 'Geschlossen');
+
 $show = (isset($_GET['show'])) ? $_GET['show'] : 50;
 $page = (isset($_GET['show'])) ? $_GET['show'] : 0;
 $start = $page * $show;
-$result = mysql_query("	SELECT t.id, c.name AS category, t.status, t.timestamp_created,
-							MAX(e.timestamp_created) AS last_response, COUNT(e.id) AS entry_count
-						FROM ot_ticket AS t
-						JOIN ot_ticket_entry AS e
-							ON e.ticket_id = t.id
-						LEFT JOIN ot_ticket_category AS c
-							ON c.id = t.ticket_category_id
-						GROUP BY t.id
-						ORDER BY t.status, last_response DESC
-						LIMIT $start, $show") or die('MySQLError: ' . mysql_error());
+
+$query = "	SELECT t.id, c.name AS category, t.status, t.timestamp_created,
+				MAX(e.timestamp_created) AS last_response, COUNT(e.id) AS entry_count
+			FROM ot_ticket AS t
+			JOIN ot_ticket_entry AS e
+				ON e.ticket_id = t.id
+			LEFT JOIN ot_ticket_category AS c
+				ON c.id = t.ticket_category_id
+			GROUP BY t.id
+			ORDER BY t.status, last_response DESC
+			LIMIT $start, $show";
+
+$result = MySQL::query($query);
+
 $data = array();
-while ($row = mysql_fetch_assoc($result)) {
+while ($row = MySQL::fetch($result)) {
 	$data[] = $row;
 } ?>
 
@@ -62,7 +67,7 @@ while ($row = mysql_fetch_assoc($result)) {
 	</div>
 	
 	<?php if (count($data) > $show): ?>
-		<a href="<?php echo 'index.php?p=ticket&page=' . ($page+1); ?>">Nächste Seite</a>
+		<a href="<?php echo $ot->get_link('ticket', 0, '', array('page' => $page+1, 'show' => $show)) ; ?>">Nächste Seite</a>
 	<?php endif; ?>
 
 <?php else: ?>
@@ -70,51 +75,15 @@ while ($row = mysql_fetch_assoc($result)) {
 
 <?php endif; ?>
 
-<button id="create_ticket_button">Ticket erstellen</button>
+<button class="create_ticket_button" id="create_ticket_button">Ticket erstellen</button>
 
-<div id="create_ticket_dialog" style="font-size: 10pt">
-	<form id="create_ticket_form" action="<?php echo $ot->get_link('ticket'); ?>" method="POST" enctype="multipart/form-data">
-		<input type="hidden" name="action" value="create" />
-		<fieldset>
-			<legend>Fragesteller</legend>
-			<label for="inquirer_title">Anrede:</label>
-			<select name="inquirer_title">
-				<option value="1">Herr</option>
-				<option value="2">Frau</option>
-			</select> <br />
-			<label for="inquirer_first_name">Vorname:</label>
-			<input type="text" name="inquirer_first_name" /> <br />
-			<label for="inquirer_last_name">Nachname:</label>
-			<input type="text" name="inquirer_last_name" /> <br />
-			<label for="inquirer_mail">Mail:</label>
-			<input type="text" name="inquirer_mail" /> <br />
-		</fieldset>
-		<fieldset>
-			<legend>Optionen</legend>
-			<label for="ticket_category_id">Kategorie:</label>
-			<?php echo create_dropdown_menu('ticket_category_id', 'ot_ticket_category', 'Unbekannt'); ?> <br />
-			<label for="status">Status:</label>
-			<select name="status">
-				<option value="0">Offen</option>
-				<option value="1">Beantwortet</option>
-				<option value="2">Geschlossen</option>
-			</select> <br />
-		</fieldset>
-		<fieldset>
-			<legend>Referenz</legend>
-			<label for="ref_table">Anfrage zu:</label>
-			<select name="ref_table">
-				<option value="ot_row">Bestellung</option>
-				<option value="ot_order_list">Produkt</option>
-			</select>
-			<input type="number" name="ref_id" />
-		</fieldset>
-		<fieldset>
-			<legend>Text</legend>
-			<textarea rows="20" cols="80"></textarea>
-		</fieldset>
-	</form>
-</div>
+<?php
+$create_ticket_data = array(
+		'dialog_id' => 'create_ticket_dialog',
+	);
+include 'ticket/ot_ticket_dialog_functions.php';
+include 'ticket/ot_ticket_dialog.php'; 
+include 'ticket/ot_ticket_dialog_js.php'; ?>
 	
 <script>
 	$(document).ready(function () {
@@ -123,22 +92,7 @@ while ($row = mysql_fetch_assoc($result)) {
 			$('.action-selectbox', '.overview .table').prop('checked', $checked);
 		});
 	
-		$('#create_ticket_button').bind('click', function () {
-			$('#create_ticket_dialog').dialog('open');
-		});
-	
-		$('#create_ticket_dialog').dialog({
-			title: 'Ticket erstellen',
-			autoOpen: false,
-			height: 'auto',
-			width: 'auto',
-			modal: true,
-			buttons: {
-				'Erstellen': function () {
-					$('#create_ticket_form').submit();
-				}
-			}
-		});
+		register_ticket_dialog($('#create_ticket_button'));
 			      
 	});
 </script>

@@ -11,18 +11,31 @@ foreach ($fields as $name => $default) {
 
 $values['timestamp_created'] = $timestamp;
 
-$cols = join(', ', array_keys($values));
-$values = join(', ', $values);
-$result = mysql_query("	INSERT INTO ot_ticket
-							($cols)
-						VALUES ($values)") or die('MySQLError: ' . mysql_error());
+$query = "	INSERT INTO ot_ticket
+				(" . join(', ', array_keys($values)) . ")
+			VALUES (" . join(', ', $values) . ")";
 
-$ticket= array('id' => mysql_insert_id());
+$redirect = $ot->get_link('ticket');
 
-$text = (isset($_POST['text'])) ? "'$_POST[text]'" : "''";
+MySQL::start_transaction();
 
-$result = mysql_query("	INSERT INTO ot_ticket_entry
-							(ticket_id, text, timestamp_created)
-						VALUES ($ticket[id], $text, $timestamp)") or die('MySQLError: ' . mysql_error());
+if ($result = MySQL::query($query)) {
+	$ticket = array('id' => MySQL::insert_id());
+	
+	$text = (isset($_POST['text'])) ? "'$_POST[text]'" : "''";
+	
+	$query = "	INSERT INTO ot_ticket_entry
+					(ticket_id, text, timestamp_created)
+				VALUES ($ticket[id], $text, $timestamp)";
+	
+	if ($result = MySQL::query($query)) {
+		MySQL::commit();
+		
+		$redirect = $ot->get_link('ticket', $ticket['id']);
+	}
+}
 
-header("Location: index.php?p=ticket&id=$ticket[id]");
+header("Location: $redirect");
+
+
+

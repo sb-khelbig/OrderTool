@@ -14,7 +14,8 @@ while ($row = MySQL::fetch($result)) {
 }
 
 $query = "	SELECT *
-			FROM ot_order";
+			FROM ot_order
+			LIMIT 1000, 200";
 
 $result = MySQL::query($query);
 
@@ -86,10 +87,35 @@ if ($orders) {
 	
 <?php endif; ?>
 
+<?php include 'ticket/ot_ticket_dialog.php'; ?>
+
 <script>
-	var loading = false;
+	var dialog = null;
+	
+	function fill_dialog(data) {
+		jQuery.each(data, function (key, value) {
+			$('*[name=' + key + ']', dialog).val(value);
+		});
+		dialog.dialog('open');
+	};
 	
 	jQuery(document).ready(function () {
+		var loading = false;
+		dialog = $('#create_ticket_dialog');
+		
+		dialog.dialog({
+			title: 'Ticket erstellen',
+			autoOpen: false,
+			height: 'auto',
+			width: 'auto',
+			modal: true,
+			buttons: {
+				'Erstellen': function () {
+					$('#create_ticket_form').submit();
+				}
+			}
+		});
+		
 		$('.order').bind('click', function () {
 			if (!loading) {
 				loading = true;
@@ -102,7 +128,7 @@ if ($orders) {
 					$.get('orders/ot_orders_ajax.php',
 							{id: id, action: 'load'},
 							function (data) {
-								var tr = $('<tr id="info_' + id + '" style="display: none">');
+								var tr = $('<tr id="info_' + id + '" style="display: none; font-size: 10px;">');
 								var td = $('<td>'); td.attr('colspan', order.children().length); tr.append(td);
 								
 								if (!data['error']) {
