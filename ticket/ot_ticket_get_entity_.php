@@ -1,6 +1,57 @@
-<?php $ticket = Ticket::get($_GET['id']); ?>
+<?php
+$ticket = get_row_by_id($_GET['id'], 'ot_ticket') or die('ID existiert nicht!');
 
-<h1>Ticket ID <?php echo $ticket->id; ?></h1>
+$result = mysql_query("	SELECT id, is_response, timestamp_created, text
+						FROM ot_ticket_entry
+						WHERE ticket_id = $ticket[id]
+						ORDER BY timestamp_created DESC") or die('MySQLError: ' . mysql_error());
+$entries = array();
+while ($row = mysql_fetch_assoc($result)) {
+	$entries[$row['id']] = $row;
+}
+
+$order_data = array();
+$order_list_data = array();
+
+/*
+if ($ticket['ref_table'] == 'ot_row') {
+	$result = mysql_query("	SELECT c.id, h.name, c.data
+							FROM ot_row AS r
+							JOIN ot_column AS c
+								ON r.id = c.row_id
+							JOIN ot_order_list_has_header AS olh
+								ON r.order_list_id = olh.order_list_id
+									AND olh.pos = c.pos
+							LEFT JOIN ot_header AS h
+								ON h.id = olh.header_id
+							WHERE r.id = $ticket[ref_id]") or die('MySQLError: ' . mysql_error());
+	$order_data = array();
+	while ($row = mysql_fetch_assoc($result)) {
+		$order_data[$row['id']] = $row;
+	}
+	$result = mysql_query("	SELECT ola.id, a.name, ola.value
+							FROM ot_row AS r
+							JOIN ot_order_list_has_attribute AS ola
+								ON r.order_list_id = ola.order_list_id
+							JOIN ot_attribute AS a
+								ON a.id = ola.attribute_id
+							WHERE r.id = $ticket[ref_id]") or die('MySQLError: ' . mysql_error());
+	$order_list_data = array();
+	while ($row = mysql_fetch_assoc($result)) {
+		$order_list_data[$row['id']] = $row;
+	}
+} */
+
+function quote_mail($mail, $ticket) {
+	$sender = ($mail['is_response']) ? "USER XYZ" : "$ticket[inquirer_first_name] $ticket[inquirer_last_name]";
+	$date = date('d.m.Y G:i', $mail['timestamp_created']) . ' Uhr';
+	$text[] = "Am $date schrieb $sender:";
+	$text[] = "<blockquote type=\"cite\">$mail[text]</blockquote>";
+	return join('<br>', $text);
+}
+?>
+
+<h1>Ticket ID <?php echo $ticket['id']; ?></h1>
 
 <h2>Allgemeine Informationen</h2>
 <form>
@@ -8,20 +59,20 @@
 		<legend>Fragesteller</legend>
 		<label for="inquirer_title">Anrede:</label>
 		<select name="inquirer_title">
-			<option value="1" <?php echo ($ticket->inquirer_title == 1) ? 'selected' : ''; ?>>Herr</option>
-			<option value="2" <?php echo ($ticket->inquirer_title == 0) ? 'selected' : ''; ?>>Frau</option>
+			<option value="1" <?php echo ($ticket['inquirer_title'] == 1) ? 'selected' : ''; ?>>Herr</option>
+			<option value="2" <?php echo ($ticket['inquirer_title'] == 2) ? 'selected' : ''; ?>>Frau</option>
 		</select> <br />
 		<label for="inquirer_first_name">Vorname:</label>
-		<input type="text" name="inquirer_first_name" value="<?php echo $ticket->inquirer_first_name; ?>" /> <br />
+		<input type="text" name="inquirer_first_name" value="<?php echo $ticket['inquirer_first_name']; ?>" /> <br />
 		<label for="inquirer_last_name">Nachname:</label>
-		<input type="text" name="inquirer_last_name" value="<?php echo $ticket->inquirer_last_name; ?>" /> <br />
+		<input type="text" name="inquirer_last_name" value="<?php echo $ticket['inquirer_last_name']; ?>" /> <br />
 		<label for="inquirer_mail">Mail:</label>
-		<input type="text" name="inquirer_mail" value="<?php echo $ticket->inquirer_mail; ?>" /> <br />
+		<input type="text" name="inquirer_mail" value="<?php echo $ticket['inquirer_mail']; ?>" /> <br />
 	</fieldset>
 	<fieldset>
 		<legend>Optionen</legend>
 		<label for="ticket_category_id">Kategorie:</label>
-		<?php echo TicketCategory::create_dropdown_menu('ticket_category_id', 'Wählen...', $ticket->category); ?> <br />
+		<?php echo create_dropdown_menu('ticket_category_id', 'ot_ticket_category', 'Unbekannt', $ticket['ticket_category_id']); ?> <br />
 		<label for="status">Status:</label>
 		<select name="status">
 			<option value="0">Offen</option>
@@ -40,26 +91,27 @@
 			<div id="info_tabs-1">
 				<label for="ref_table">Anfrage zu:</label>
 				<select name="ref_table">
-					<option value="ot_order" <?php echo ($ticket->ref_table == 'ot_order') ? 'selected' : ''; ?>>Bestellung</option>
-					<option value="ot_position" <?php echo ($ticket->ref_table == 'ot_position') ? 'selected' : ''; ?>>Position</option>
+					<option value="ot_order" <?php echo ($ticket['ref_table'] == 'ot_order') ? 'selected' : ''; ?>>Bestellung</option>
+					<option value="ot_position" <?php echo ($ticket['ref_table'] == 'ot_position') ? 'selected' : ''; ?>>Position</option>
 				</select>
-				<ul>
-				<?php foreach ($ticket->references->all() as $reference): ?>
-					<li><input type="number" name="ref_id" value="<?php echo $reference->ref_id; ?>" /></li>
-				<?php endforeach; ?>
-				</ul>
+				<input type="number" name="ref_id" value="<?php echo $ticket['ref_id']; ?>" />
 			</div>
 			<div id="info_tabs-2">
-				bla
-
+			<?php if?>
+			<?php foreach ($order_data as $id => $data): ?>
+				<label><?php echo ($data['name']) ? $data['name'] : 'Optional'; ?>:</label>
+				<input type="text" value="<?php echo $data['data']; ?>" /> <br />
+			<?php endforeach; ?>
 			</div>
 			<div id="info_tabs-3">
-				bla
+			<?php foreach ($order_list_data as $id => $data): ?>
+				<label><?php echo $data['name']; ?>:</label>
+				<input type="text" value="<?php echo $data['value']; ?>" /> <br />
+			<?php endforeach; ?>
 			</div>
 		</div>
 	</fieldset>
 </form>
-
 
 <h2>Korrespondenz</h2>
 
@@ -67,19 +119,17 @@
 <button id="add_response_button">Kundenantwort einfügen</button>
 
 <br />
-
-<?php foreach ($ticket->entries->all() as $entry): ?>
+<?php foreach ($entries as $entry): ?>
 <fieldset>
 	<legend>
-		<?php echo ($entry->response) ? "USER XYZ" : $ticket->inquirer_first_name . ' ' . $ticket->inquirer_last_name; ?> | <?php echo date('d.m.Y G:i', $entry->created) . ' Uhr'; ?>
+		<?php echo ($entry['is_response']) ? "USER XYZ" : "$ticket[inquirer_first_name] $ticket[inquirer_last_name]"; ?> | <?php echo date('d.m.Y G:i', $entry['timestamp_created']) . ' Uhr'; ?>
 	</legend>
-	<textarea class="autoresize" style="width: 100%;"><?php echo $entry->text; ?></textarea>
+	<textarea class="autoresize" style="width: 100%;"><?php echo $entry['text']; ?></textarea>
 </fieldset>
-<?php endforeach; /*?>
-
+<?php endforeach; ?>
 
 <div id="send_response_dialog" style="font-size: 10pt">
-	<form id="send_response_form" action="<?php echo $ot->get_link('ticket', $ticket->id); ?>" method="POST" enctype="multipart/form-data">
+	<form id="send_response_form" action="<?php echo $ot->get_link('ticket', $ticket['id']); ?>" method="POST" enctype="multipart/form-data">
 		<input type="hidden" name="action" value="respond" />
 		<div id="response_tabs" style="font-size: 10pt;">
 			<ul>
@@ -130,7 +180,7 @@
 		</fieldset>
 	</form>
 </div>
-*/ ?>
+
 <script type="text/javascript" src="static/tinymce/tiny_mce.js"></script>
 <script>
 	tinyMCE.init({

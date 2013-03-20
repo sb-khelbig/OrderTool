@@ -148,9 +148,13 @@ abstract class BaseTable {
 					$insert[$index][] = "'$value'";
 				}
 			}
-		}
+		}	
 		
 		$fk_field_names = array();
+		foreach (array_keys($fields['Insert']) as $name) {
+			$fk_field_names[] = $field_names[$name]->savable();
+		}
+		
 		foreach (array_keys($fields['ForeignKeyField']) as $name) {
 			$fk_field_names[] = $field_names[$name]->savable();
 		}
@@ -161,7 +165,7 @@ abstract class BaseTable {
 		
 		if ($insert) {
 			$query = "	INSERT INTO " . static::getTableName() . "
-						(" . join(', ', array_merge(array_keys($fields['Insert']), $fk_field_names)) . ")
+						(" . join(', ', $fk_field_names) . ")
 					VALUES " . join(', ', $insert);
 			
 			if ($result = MySQL::query($query)) {
@@ -238,6 +242,8 @@ abstract class BaseTable {
 			$select[] = $obj->name;
 			$select[] = '</option>';
 		}
+		
+		$select[] = "</select>";
 		
 		return join('', $select);
 	}
@@ -536,11 +542,13 @@ class Ticket extends BaseTable {
 				'id' => new PrimaryKeyField(),
 				'category' => new ForeignKeyField('ticket_category_id', 'TicketCategory'),
 				'status' => new IntegerField('status'),
+				'ref_table' => new CharField('ref_table', 50),
 				'inquirer_title' => new BooleanField('inquirer_title'),
 				'inquirer_first_name' => new CharField('inquirer_first_name', 50),
 				'inquirer_last_name' => new CharField('inquirer_last_name', 50),
 				'inquirer_mail' => new CharField('inquirer_mail', 80),
 				'created' => new IntegerField('timestamp_created'),
+				'entries' => new BackLinkField($instance, 'ticket_id', 'TicketEntry', 'ticket'),
 				'references' => new BackLinkField($instance, 'ticket_id', 'TicketReference', 'ticket'),
 		);
 	}
@@ -586,7 +594,6 @@ class TicketReference extends BaseTable {
 		return array(
 				'id' => new PrimaryKeyField(),
 				'ticket' => new ForeignKeyField('ticket_id', 'Ticket'),
-				'ref_table' => new CharField('ref_table', 50),
 				'ref_id' => new ReferenceIDField(),
 		);
 	}
@@ -623,7 +630,7 @@ class TicketEntry extends BaseTable {
 				'id' => new PrimaryKeyField(),
 				'ticket' => new ForeignKeyField('ticket_id', 'Ticket'),
 				'response' => new BooleanField('is_response'),
-				'created' => new IntegerField('timesamp_created'),
+				'created' => new IntegerField('timestamp_created'),
 				'text' => new TextField('text'),
 		);
 	}
@@ -972,7 +979,7 @@ class Table {
 		);
 	
 	public static function get($table) {
-		if (array_key_exists($name, static::$members)) {
+		if (array_key_exists($table, static::$members)) {
 			return static::$members[$table];
 		}
 		return FALSE;

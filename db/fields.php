@@ -101,7 +101,7 @@ class TextField extends BaseField {
 	}
 
 	protected function verify($value) {
-		if (is_string($var)) {
+		if (is_string($value)) {
 			return TRUE;
 		}
 		throw new InvalidValueException();

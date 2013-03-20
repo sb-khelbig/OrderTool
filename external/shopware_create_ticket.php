@@ -11,14 +11,16 @@ try {
 	if ($token) {
 		$iv_size = mcrypt_get_iv_size(MCRYPT_BLOWFISH, MCRYPT_MODE_ECB);
 		$iv = mcrypt_create_iv($iv_size, MCRYPT_RAND);
-		
+	
 		$decrypted_string = rtrim(mcrypt_decrypt(MCRYPT_BLOWFISH, $key, base64_decode($token), MCRYPT_MODE_ECB , $iv), "\0");
 		
-		if ($data = json_decode($decrypted_string)) {
+		if ($data = json_decode($decrypted_string, TRUE)) {
 		
 			if ($text) {
-				include '../db/mysql.php';
-				include '../db/tables.php';
+				$text = nl2br($text);
+				
+				include __DIR__ . '/../db/mysql.php';
+				include __DIR__ . '/../db/tables.php';
 				
 				if (isset($data['data_source_id'])) {
 					$data_source = DataSource::get($data['data_source_id']);
@@ -35,7 +37,7 @@ try {
 									if ($table == 'Order') {
 										$attribute = Attribute::get(3);
 									} elseif ($table == 'Position') {
-										$attribute = Attribute::get(15);
+										$attribute = Attribute::get(14);
 									} else {
 										throw new Exception('Unsupported reference!');
 									}
@@ -49,8 +51,10 @@ try {
 									if ($values) {
 										$ids = array();
 										foreach ($values as $value) {
-											$ids[] = $value->ref_id;
+											$ids[] = $value->reference;
 										}
+										
+										include __DIR__ . '/save_ticket_function.php';
 										
 										if ($table == 'Order') {
 											$orders = Order::filter(array(
@@ -60,58 +64,15 @@ try {
 											);
 											
 											if (count($orders) == 1) {
-												$order = array_pop($orders);
-												
-												$ticket = new Ticket();
-												$ticket->category = $ticket_category;
-												$ticket->ref_table = $table::getTableName();
-												$ticket->ref_id = $order->id;
-												$ticket->created = time();
-												
-												// Title
-												$value = Value::filter(array(
-														'ref_id' => $order->customer->id,
-														'attribute_id' => 27,
+												$json['data']['ticket_id'] = save_ticket(
+														$ticket_category, $table, $orders, $text, array(
+														'reference' => $orders[0]->customer->id,
+														'title' => 27,
+														'first_name' => 28,
+														'last_name' => 29,
+														'mail' => 25,
 													)
 												);
-												$value = ($value) ? array_pop($value) : FALSE;
-												$ticket->inquirer_title = ($value) ? (($value->data == 'ms') ? FALSE : TRUE) : FALSE;
-												
-												// FirstName
-												$value = Value::filter(array(
-														'ref_id' => $order->customer->id,
-														'attribute_id' => 28,
-													)
-												);
-												$value = ($value) ? array_pop($value) : FALSE;
-												$ticket->inquirer_first_name = ($value) ? $value->data : '';
-												
-												// LastName
-												$value = Value::filter(array(
-														'ref_id' => $order->customer->id,
-														'attribute_id' => 29,
-													)
-												);
-												$value = ($value) ? array_pop($value) : FALSE;
-												$ticket->inquirer_last_name = ($value) ? $value->data : '';
-												
-												// Mail
-												$value = Value::filter(array(
-														'ref_id' => $order->customer->id,
-														'attribute_id' => 25,
-													)
-												);
-												$value = ($value) ? array_pop($value) : FALSE;
-												$ticket->inquirer_mail = ($value) ? $value->data : '';
-												
-												$ticket->save();
-												
-												$entry = new TicketEntry();
-												$entry->ticket = $ticket;
-												$entry->created = time();
-												$entry->text = MySQL::escape($text);
-												
-												$entry->save();
 												
 												$json['error'] = FALSE;
 											} else {
@@ -125,60 +86,22 @@ try {
 															AND p.id IN (" . join(', ', $ids) . ")";
 											
 											if ($result = MySQL::query($query)) {
-												if (MySQL::num_rows($result) == 1) {
-													$position = MySQL::fetch($result);
-													$position = Position::get($position['id']);
+												if (MySQL::num_rows($result) > 0) {
+													$ids = array();
+													while ($row = MySQL::fetch($result)) {
+														$ids[] = $row['id'];
+													}
+													$positions = Position::filter(array('id' => $ids));
 													
-													$ticket = new Ticket();
-													$ticket->category = $ticket_category;
-													$ticket->ref_table = $table::getTableName();
-													$ticket->ref_id = $position->id;
-													$ticket->created = time();
-													
-													// Title
-													$value = Value::filter(array(
-															'ref_id' => $position->order->customer->id,
-															'attribute_id' => 27,
+													$json['data']['ticket_id'] = save_ticket(
+															$ticket_category, $table, $positions, $text, array(
+															'reference' => $positions[0]->order->customer->id,
+															'title' => 27,
+															'first_name' => 28,
+															'last_name' => 29,
+															'mail' => 25,
 														)
 													);
-													$value = ($value) ? array_pop($value) : FALSE;
-													$ticket->inquirer_title = ($value) ? (($value->data == 'ms') ? FALSE : TRUE) : FALSE;
-													
-													// FirstName
-													$value = Value::filter(array(
-															'ref_id' => $position->order->customer->id,
-															'attribute_id' => 28,
-														)
-													);
-													$value = ($value) ? array_pop($value) : FALSE;
-													$ticket->inquirer_first_name = ($value) ? $value->data : '';
-													
-													// LastName
-													$value = Value::filter(array(
-															'ref_id' => $position->order->customer->id,
-															'attribute_id' => 29,
-														)
-													);
-													$value = ($value) ? array_pop($value) : FALSE;
-													$ticket->inquirer_last_name = ($value) ? $value->data : '';
-													
-													// Mail
-													$value = Value::filter(array(
-															'ref_id' => $position->order->customer->id,
-															'attribute_id' => 25,
-														)
-													);
-													$value = ($value) ? array_pop($value) : FALSE;
-													$ticket->inquirer_mail = ($value) ? $value->data : '';
-													
-													$ticket->save();
-													
-													$entry = new TicketEntry();
-													$entry->ticket = $ticket;
-													$entry->created = time();
-													$entry->text = MySQL::escape($text);
-													
-													$entry->save();
 													
 													$json['error'] = FALSE;
 												} else {
