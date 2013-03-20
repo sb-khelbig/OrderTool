@@ -536,14 +536,58 @@ class Ticket extends BaseTable {
 				'id' => new PrimaryKeyField(),
 				'category' => new ForeignKeyField('ticket_category_id', 'TicketCategory'),
 				'status' => new IntegerField('status'),
-				'ref_table' => new CharField('ref_table', 50),
-				'ref_id' => new ReferenceIDField(),
-				'inquirer_title' => new CharField('inquirer_title', 20),
+				'inquirer_title' => new BooleanField('inquirer_title'),
 				'inquirer_first_name' => new CharField('inquirer_first_name', 50),
 				'inquirer_last_name' => new CharField('inquirer_last_name', 50),
 				'inquirer_mail' => new CharField('inquirer_mail', 80),
 				'created' => new IntegerField('timestamp_created'),
-				'last_response' => new IntegerField('timestamp_last_response'),
+				'references' => new BackLinkField($instance, 'ticket_id', 'TicketReference', 'ticket'),
+		);
+	}
+	
+	public function last_edited() {
+		$query = "	SELECT timestamp_created
+					FROM ot_ticket_entry
+					WHERE ticket_id = " . $this->id . "
+					ORDER BY timestamp_created DESC";
+		
+		$result = MySQL::query($query);
+		
+		if ($timestamp = MySQL::fetch($result)) {
+			return (int) $timestamp['timestamp_created'];
+		}
+		
+		return 0;
+	}
+	
+	public function entry_count() {
+		$query = "	SELECT COUNT(*) AS count
+					FROM ot_ticket_entry
+					WHERE ticket_id = " . $this->id;
+		
+		$result = MySQL::query($query);
+		
+		if ($count = MySQL::fetch($result)) {
+			return (int) $count['count'];
+		}
+	}
+}
+
+class TicketReference extends BaseTable {
+	protected static $data = array(
+			'table' => 'ot_ticket_reference',
+			'title' => '',
+			'title_plural' => '',
+	);
+	
+	protected static $member = array();
+	
+	protected static function getFields($instance = null) {
+		return array(
+				'id' => new PrimaryKeyField(),
+				'ticket' => new ForeignKeyField('ticket_id', 'Ticket'),
+				'ref_table' => new CharField('ref_table', 50),
+				'ref_id' => new ReferenceIDField(),
 		);
 	}
 }
@@ -561,6 +605,26 @@ class TicketCategory extends BaseTable {
 		return array(
 				'id' => new PrimaryKeyField(),
 				'name' => new CharField('name', 50),
+		);
+	}
+}
+
+class TicketEntry extends BaseTable {
+	protected static $data = array(
+			'table' => 'ot_ticket_entry',
+			'title' => 'Korrespondenz',
+			'title_plural' => 'Korrespondenzen',
+	);
+	
+	protected static $member = array();
+	
+	protected static function getFields($instance = null) {
+		return array(
+				'id' => new PrimaryKeyField(),
+				'ticket' => new ForeignKeyField('ticket_id', 'Ticket'),
+				'response' => new BooleanField('is_response'),
+				'created' => new IntegerField('timesamp_created'),
+				'text' => new TextField('text'),
 		);
 	}
 }
