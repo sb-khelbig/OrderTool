@@ -166,7 +166,7 @@ $query = "	SELECT sup.id
 
 <br />
 
-<?php foreach ($ticket->entries->all() as $entry): ?>
+<?php foreach (array_reverse($ticket->entries->all(), TRUE) as $entry): ?>
 	<fieldset>
 		<?php if ($entry->participant): ?>
 			<legend>
