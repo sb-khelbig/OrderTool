@@ -44,6 +44,7 @@ try {
 					"created" => $ticket["timestamp_created"], 
 					"status" =>  $ticket["status"],
 					"text" => "Bestellung",
+					"ticket_id" => $ticket["id"],
 					);
 			}
 			
@@ -69,27 +70,34 @@ try {
 					"created" => $ticket["timestamp_created"], 
 					"status" =>  $ticket["status"],
 					"text" => $ticket["article_name"],
+					"ticket_id" => $ticket["id"],
 					);
 			}
 			
 			ksort($tickets);
 			$tickets = array_reverse($tickets, true);
 			
-			foreach ($tickets as $ticket_id => $ticket_data)
+			if (count($tickets) > 0) {
+				$query = "
+					SELECT token, ticket_id 
+					FROM ot_ticket_participant
+					WHERE ticket_id IN (".join(',',array_keys($tickets)).")
+					AND type = 1
+				";
+				$result = MySQL::query($query);
+				while ($ticket = MySQL::fetch($result))
+				{
+					$tickets[$ticket["ticket_id"]]["created"] = date("d.m.Y", $tickets[$ticket["ticket_id"]]["created"]);
+					$tickets[$ticket["ticket_id"]]["status"] = $status_codes[$tickets[$ticket["ticket_id"]]["status"]];
+					$tickets[$ticket["ticket_id"]]["token"] = $ticket["token"];
+				}
+				
+				$json["data"] = $tickets;
+				$json['error'] = false;
+			} else
 			{
-				$token_bin = mcrypt_encrypt(MCRYPT_BLOWFISH, $key, $ticket_id, MCRYPT_MODE_ECB , $iv);
-				$token = base64_encode($token_bin);
-				$tickets[$token]["created"] = date("d.m.Y", $ticket_data["created"]);
-				$tickets[$token]["status"] = $status_codes[$ticket_data["status"]];
-				$tickets[$token]["text"] = $ticket_data["text"];
-				unset($tickets[$ticket_id]);
+				$json['errorMsg'] = "Keine Tickets gefunden!";
 			}
-			
-			$json["data"] = $tickets;
-			
-			
-			$json['error'] = false;
-			
 		}
 		else {
 			$json['errorMsg'] = "Invalid token!";
