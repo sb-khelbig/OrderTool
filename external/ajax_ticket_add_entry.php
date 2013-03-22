@@ -36,16 +36,16 @@ try {
 				$ticket_entry_id = MySQL::insert_id();
 				$query = "
 					INSERT INTO ot_ticket_entry_right
-					(entry_id, participant_id, read)
+					(`entry_id`, `participant_id`, `read`)
 					VALUES
 					('$ticket_entry_id', '$participant_id', 1);
 					";
 				MySQL::query($query);
 				
-				$json["data"] = array (
+				$json["data"][] = array (
 						"type" => $participant_type,
 						"name" => $titles[$participant["title"]]." ".$participant["first_name"]." ".$participant["last_name"],
-						"created" => date("d.m.Y h:i:s", $timestamp_created["timestamp_created"]),
+						"created" => date("d.m.Y H:i:s", $timestamp_created),
 						"text" => $text,
 				);
 				

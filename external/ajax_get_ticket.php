@@ -26,7 +26,7 @@ try {
 			$json["data"][] = array (
 				"type" => $ticket_entry["type"],
 				"name" => $titles[$ticket_entry["title"]]." ".$ticket_entry["first_name"]." ".$ticket_entry["last_name"],
-				"created" => date("d.m.Y h:i:s", $ticket_entry["timestamp_created"]),
+				"created" => date("d.m.Y H:i:s", $ticket_entry["timestamp_created"]),
 				"text" => $ticket_entry["text"],
 			);
 		}
