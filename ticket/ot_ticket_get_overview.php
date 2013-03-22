@@ -1,4 +1,4 @@
-<?php $status_codes = array(0 => 'Offen', 1 => 'Beantwortet', 2 => 'Geschlossen');
+<?php $status_codes = array(0 => 'Offen', 1 => 'In Bearbeitung', 2 => 'Beantwortet', 3 => 'Geschlossen');
 
 $tickets = Ticket::all();
 

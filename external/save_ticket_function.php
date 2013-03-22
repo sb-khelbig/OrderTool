@@ -5,6 +5,10 @@ function save_ticket($category, $table, $references, $text, $data) {
 	$ticket->ref_table = $table::getTableName();
 	$ticket->created = time();
 	
+	$participant = new TicketParticipant();
+	$ticket->participants->add($participant);
+	$participant->type = 1;
+	
 	// Title
 	$value = Value::filter(array(
 			'ref_id' => $data['reference'],
@@ -12,7 +16,7 @@ function save_ticket($category, $table, $references, $text, $data) {
 		)
 	);
 	$value = ($value) ? array_pop($value) : FALSE;
-	$ticket->inquirer_title = ($value) ? (($value->data == 'ms') ? FALSE : TRUE) : FALSE;
+	$participant->title = ($value) ? (($value->data == 'ms') ? 2 : 1) : 0;
 	
 	// FirstName
 	$value = Value::filter(array(
@@ -21,7 +25,7 @@ function save_ticket($category, $table, $references, $text, $data) {
 		)
 	);
 	$value = ($value) ? array_pop($value) : FALSE;
-	$ticket->inquirer_first_name = ($value) ? $value->data : '';
+	$participant->first_name = ($value) ? $value->data : '';
 	
 	// LastName
 	$value = Value::filter(array(
@@ -30,7 +34,7 @@ function save_ticket($category, $table, $references, $text, $data) {
 		)
 	);
 	$value = ($value) ? array_pop($value) : FALSE;
-	$ticket->inquirer_last_name = ($value) ? $value->data : '';
+	$participant->last_name = ($value) ? $value->data : '';
 	
 	// Mail
 	$value = Value::filter(array(
@@ -39,20 +43,27 @@ function save_ticket($category, $table, $references, $text, $data) {
 		)
 	);
 	$value = ($value) ? array_pop($value) : FALSE;
-	$ticket->inquirer_mail = ($value) ? $value->data : '';
+	$participant->mail = ($value) ? $value->data : '';
 	
 	$entry = new TicketEntry();
+	$ticket->entries->add($entry);
+	$entry->participant = $participant;
 	$entry->created = time();
 	$entry->text = MySQL::escape($text);
-	$ticket->entries->add($entry);
 	
 	foreach ($references as $reference) {
 		$ticket_ref = new TicketReference();
-		$ticket_ref->ref_id = $reference;
 		$ticket->references->add($ticket_ref);
+		$ticket_ref->ref_id = $reference;
 	}
 	
-	Ticket::bulk_save(array($ticket));
+	$tickets = array($ticket);
+	
+	Ticket::bulk_save($tickets);
+	
+	include __DIR__ . '/confirmation_mail.php';
+	
+	confirmation_mail($ticket, $participant);
 	
 	return $ticket->id;
 } ?>

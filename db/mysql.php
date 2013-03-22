@@ -153,7 +153,12 @@ function create_where_clause($conditions, $operator = 'AND') {
 	$where = array();
 	foreach ($conditions as $field => $value) {
 		if (is_array($value)) {
-			$where[] = "$field IN (" . join(', ', $value) . ")";
+			foreach ($value as $val) {
+				$values[] = (is_object($val)) ? $val->id : $val;
+			}
+			$where[] = "$field IN (" . join(', ', $values) . ")";
+		} elseif (is_object($value)) {
+			$where[] = "$field = '" . $value->id . "'";
 		} else {
 			$where[] = "$field = '$value'";
 		}

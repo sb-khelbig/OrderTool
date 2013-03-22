@@ -6,10 +6,13 @@
 	{
 		case "import_orders":
 			include __DIR__."/import/import_orders.php";
-		break;
+			break;
+		case 'import_suppliers':
+			include __DIR__."/import/import_suppliers.php";
+			break;
 		default:
 			echo "ERROR: NO API_ACTION DEFINED!";
-		break;
+			break;
 	}
 
 ?>

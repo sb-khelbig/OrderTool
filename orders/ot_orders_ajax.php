@@ -103,8 +103,9 @@ switch ($_GET['action']) {
 		}
 		$data['positions'] = array('name' => $name, 'content' => join('', $content), 'id' => $id);
 		
-		// Tickets
-		$tickets = $order->tickets->all();
+		// Tickets 
+		//$tickets = $order->tickets->all();
+		$tickets = array();
 		$name = 'Tickets (' . count($tickets) . ')';
 		$id = 'tickets_' . $order->id;
 		$content = array();

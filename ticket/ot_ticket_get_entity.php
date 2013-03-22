@@ -1,23 +1,55 @@
-<?php $ticket = Ticket::get($_GET['id']); ?>
+<?php $ticket = Ticket::get($_GET['id']);
+
+$inquirer = TicketParticipant::filter(array('ticket_id' => $ticket, 'type' => 1));
+$inquirer = array_pop($inquirer); 
+
+if ($ticket->ref_table == 'ot_position') {
+	$references = $ticket->references->all();
+	$position = Position::get($references[0]->ref_id);
+	$order = $position->order;
+} else {
+	$references = $ticket->references->all();
+	$order = Order::get($references[0]->ref_id);
+}
+
+$position_ids = array();
+foreach ($order->positions->all() as $position) {
+	$position_ids[] = $position->id;
+}
+
+$values = Value::filter(array(
+		'ref_id' => $position_ids,
+		'attribute_id' => 14,
+	)
+);
+
+$query = "	SELECT sup.id
+			FROM ot_supplier AS sup
+			JOIN ot_product_offer AS po
+				ON po.supplier_id = sup.id
+			JOIN ot_product_offer_has_data_source AS pods
+				ON pods.offer_id = po.id
+			WHERE ";
+
+?>
 
 <h1>Ticket ID <?php echo $ticket->id; ?></h1>
 
 <h2>Allgemeine Informationen</h2>
 <form>
-	<fieldset>
-		<legend>Fragesteller</legend>
-		<label for="inquirer_title">Anrede:</label>
-		<select name="inquirer_title">
-			<option value="1" <?php echo ($ticket->inquirer_title == 1) ? 'selected' : ''; ?>>Herr</option>
-			<option value="2" <?php echo ($ticket->inquirer_title == 0) ? 'selected' : ''; ?>>Frau</option>
-		</select> <br />
-		<label for="inquirer_first_name">Vorname:</label>
-		<input type="text" name="inquirer_first_name" value="<?php echo $ticket->inquirer_first_name; ?>" /> <br />
-		<label for="inquirer_last_name">Nachname:</label>
-		<input type="text" name="inquirer_last_name" value="<?php echo $ticket->inquirer_last_name; ?>" /> <br />
-		<label for="inquirer_mail">Mail:</label>
-		<input type="text" name="inquirer_mail" value="<?php echo $ticket->inquirer_mail; ?>" /> <br />
-	</fieldset>
+	<?php if ($inquirer): ?>
+		<fieldset>
+			<legend>Fragesteller</legend>
+			<label for="inquirer_title">Anrede:</label>
+			<?php echo $inquirer->title('inquirer_title'); ?> <br />
+			<label for="inquirer_first_name">Vorname:</label>
+			<input type="text" name="inquirer_first_name" value="<?php echo $inquirer->first_name; ?>" /> <br />
+			<label for="inquirer_last_name">Nachname:</label>
+			<input type="text" name="inquirer_last_name" value="<?php echo $inquirer->last_name; ?>" /> <br />
+			<label for="inquirer_mail">Mail:</label>
+			<input type="text" name="inquirer_mail" value="<?php echo $inquirer->mail; ?>" /> <br />
+		</fieldset>
+	<?php endif; ?>
 	<fieldset>
 		<legend>Optionen</legend>
 		<label for="ticket_category_id">Kategorie:</label>
@@ -25,8 +57,9 @@
 		<label for="status">Status:</label>
 		<select name="status">
 			<option value="0">Offen</option>
-			<option value="1">Beantwortet</option>
-			<option value="2">Geschlossen</option>
+			<option value="1">In Bearbeitung</option>
+			<option value="2">Beantwortet</option>
+			<option value="3">Geschlossen</option>
 		</select> <br />
 	</fieldset>
 	<fieldset>
@@ -35,7 +68,7 @@
 			<ul>
 				<li><a href="#info_tabs-1">ID</a></li>
 				<li><a href="#info_tabs-2">Bestellung</a></li>
-				<li><a href="#info_tabs-3">Position</a></li>
+				<li><a href="#info_tabs-3">Positionen (<?php echo count($order->positions->all()); ?>)</a></li>
 			</ul>
 			<div id="info_tabs-1">
 				<label for="ref_table">Anfrage zu:</label>
@@ -50,13 +83,78 @@
 				</ul>
 			</div>
 			<div id="info_tabs-2">
-				bla
-
+				<ul>
+					<?php foreach($order->attributes->all() as $atr): ?>
+						<li><?php echo $atr->attribute->name . ': ' . $atr->data; ?></li>
+					<?php endforeach; ?>
+				</ul>
 			</div>
 			<div id="info_tabs-3">
-				bla
+				<?php 
+				$attributes = array('ID' => 'ID');
+				$rows = array();
+				foreach ($order->positions->all() as $entity) {
+					$rows[$entity->id]['ID'] = $entity->id;
+					foreach ($entity->attributes->all() as $atr) {
+						if (!array_key_exists($atr->attribute->id, $attributes)) {
+							$attributes[$atr->attribute->id] = $atr->attribute->short_name;
+						}
+						$rows[$entity->id][$atr->attribute->id] = $atr->data;
+					}
+				} ?>
+				<table style="font-size: 12px;">
+					<thead>
+						<tr>
+						<?php foreach ($attributes as $atr_id => $atr_name): ?>
+							<th><?php echo $atr_name; ?></th>
+						<?php endforeach; ?>
+						</tr>
+					</thead>
+					
+					<tbody>
+						<?php foreach ($rows as $entity_id => $row): ?>
+							<tr>
+								<?php foreach ($attributes as $atr_id => $atr_name): ?>
+									<?php if (array_key_exists($atr_id, $row)): ?>
+						 				<td><?php echo $row[$atr_id]; ?></td>
+						 			<?php else: ?>
+										<td>&nbsp;</td>
+									<?php endif; ?>
+								<?php endforeach;?>
+							</tr>
+						<?php endforeach; ?>
+					</tbody>
+				</table>
 			</div>
 		</div>
+	</fieldset>
+</form>
+<form>
+	<fieldset>
+		<legend>Teilnehmer</legend>
+			<table>
+				<thead>
+					<tr>
+						<th>Typ</th>
+						<th>Anrede</th>
+						<th>Vorname</th>
+						<th>Nachname</th>
+						<th>eMail</th>
+					</tr>
+				</thead>
+				<tbody id="participants-table">
+				<?php foreach ($ticket->participants->all() as $participant): ?>
+					<tr>
+						<td><?php echo $participant->type(); ?></td>
+						<td><?php echo $participant->title(); ?></td>
+						<td><?php echo $participant->first_name; ?></td>
+						<td><?php echo $participant->last_name; ?></td>
+						<td><?php echo $participant->mail; ?>
+					<tr>
+				<?php endforeach; ?>
+				</tbody>
+			</table>
+		 <input id="participants-button" type="button" value="Hinzufügen" />
 	</fieldset>
 </form>
 
@@ -69,13 +167,15 @@
 <br />
 
 <?php foreach ($ticket->entries->all() as $entry): ?>
-<fieldset>
-	<legend>
-		<?php echo ($entry->response) ? "USER XYZ" : $ticket->inquirer_first_name . ' ' . $ticket->inquirer_last_name; ?> | <?php echo date('d.m.Y G:i', $entry->created) . ' Uhr'; ?>
-	</legend>
-	<textarea class="autoresize" style="width: 100%;"><?php echo $entry->text; ?></textarea>
-</fieldset>
-<?php endforeach; /*?>
+	<fieldset>
+		<?php if ($entry->participant): ?>
+			<legend>
+				<?php echo $entry->participant->first_name . ' ' . $entry->participant->last_name; ?> | <?php echo date('d.m.Y G:i', $entry->created) . ' Uhr'; ?>
+			</legend>
+		<?php endif; ?>
+		<textarea class="autoresize" style="width: 100%;"><?php echo $entry->text; ?></textarea>
+	</fieldset>
+<?php endforeach; ?>
 
 
 <div id="send_response_dialog" style="font-size: 10pt">
@@ -85,13 +185,13 @@
 			<ul>
 				<li><a href="#response_tabs-1">Optionen</a></li>
 				<li><a href="#response_tabs-2">Nachricht (Kunde)</a></li>
-				<li><a href="#response_tabs-3" style="display: none;">Nachricht (Partner)</a></li>
+				<li style="display: none;"><a href="#response_tabs-3">Nachricht (Partner)</a></li>
 				<li><a href="#response_tabs-4">Bestellung</a></li>
 				<li><a href="#response_tabs-5">Liste</a></li>
 			</ul>
 			<div id="response_tabs-1">
 				<label for="template">Vorlage:</label>
-				<?php echo create_dropdown_menu('template', 'ot_mail_template', 'Keine Vorlage verwenden'); ?> <br />
+				<?php echo MailTemplate::create_dropdown_menu('template', 'Keine Vorlage verwenden'); ?> <br />
 				<label for="partner">Anbieter:</label>
 				<select name="partner">
 					<option value="0">Anbieter nicht informieren</option>
@@ -99,30 +199,24 @@
 				</select>
 			</div>
 			<div id="response_tabs-2">
-				<textarea name="text_customer" rows="20" style="width: 100%;"><?php echo quote_mail(array_pop($entries), $ticket); ?></textarea>
+				<textarea name="text_customer" rows="20" style="width: 100%;"></textarea>
 			</div>
 			<div id="response_tabs-3">
-				<input type="text" name="partner_mail" placeholder="eMail Adresse"  style="width: 100%"/> <br />
+				<input type="text" name="partner_mail" placeholder="eMail Adresse" style="width: 100%"/> <br />
 				<textarea name="text_partner" rows="20" style="width: 100%;"></textarea>
 			</div>
 			<div id="response_tabs-4">
-			<?php foreach ($order_data as $id => $data): ?>
-				<label><?php echo ($data['name']) ? $data['name'] : 'Optional'; ?>:</label>
-				<input type="text" value="<?php echo $data['data']; ?>" /> <br />
-			<?php endforeach; ?>
+				
 			</div>
 			<div id="response_tabs-5">
-			<?php foreach ($order_list_data as $id => $data): ?>
-				<label><?php echo $data['name']; ?>:</label>
-				<input type="text" value="<?php echo $data['value']; ?>" /> <br />
-			<?php endforeach; ?>
+			
 			</div>
 		</div>
 	</form>
 </div>
 
 <div id="add_response_dialog" style="font-size: 10pt">
-	<form id="add_response_form" action="<?php echo $ot->get_link('ticket', $ticket['id']); ?>" method="POST" enctype="multipart/form-data">
+	<form id="add_response_form" action="<?php echo $ot->get_link('ticket', $ticket->id); ?>" method="POST" enctype="multipart/form-data">
 		<input type="hidden" name="action" value="addresponse" />
 		<fieldset>
 			<legend>Text</legend>
@@ -130,7 +224,86 @@
 		</fieldset>
 	</form>
 </div>
-*/ ?>
+
+<div id="participants-dialog" style="font-size: 12px">
+	<form id="participants-form">
+		<fieldset>
+			<legend>Teilnehmer</legend>
+			<select name="type">
+				<option value="0">Wählen...</option>
+				<?php if ($suppliers): ?>
+					<?php foreach ($suppliers as $supplier): ?>
+						<optgroup label="<?php echo "$supplier"; ?>">
+							<?php foreach ($supplier->contacts->all() as $contact): ?>
+								<option value="<?php $contact->id; ?>"><?php echo "$contact (" . $contact->mail . ")"; ?></option>
+							<?php endforeach; ?>
+						</optgroup>
+					<?php endforeach; ?>
+				<?php endif; ?>
+				<option value="2">Extern</option>
+			</select> <br />
+			<label for="title">Anrede:</label>
+			<select name="title" disabled>
+				<option value="1">Herr</option>
+				<option value="2">Frau</option>
+			</select> <br />
+			<label for="first_name">Vorname:</label>
+			<input type="text" name="first_name" disabled /> <br />
+			<label for="last_name">Nachname:</label>
+			<input type="text" name="last_name" disabled /> <br />
+			<label for="mail">Mail:</label>
+			<input type="text" name="mail" disabled /> <br />
+		</fieldset>
+		<fieldset>
+			<legend>Korrespondenz</legend>
+			<fieldset>
+				<legend>Zugriff erlauben</legend>
+					<div>
+						<div>
+							<label for="selector">Auswählen:</label>
+							<select name="selector">
+								<option value="<?php echo $inquirer->id; ?>">Kunde</option>
+								<?php if ($partners = TicketParticipant::filter(array('ticket_id' => $ticket, 'type' => 0))): ?>
+								<optgroup label="Partner">
+									<?php foreach ($partners as $partner): ?>
+										<option value="<?php echo $partner->id; ?>"><?php echo $partner->last_name; ?></option>
+									<?php endforeach; ?>
+								</optgroup>
+								<?php endif; ?>
+								<option>Mitarbeiter</option>
+							</select>
+							<input type="button" value="Markieren" />
+						</div>
+						<table style="font-size: 12px;">
+							<thead>
+								<tr>
+									<th><input type="checkbox" /></th>
+									<th>Teilnehmer</th>
+									<th>Name</th>
+									<th>Uhrzeit</th>
+								</tr>
+							</thead>
+							<tbody>
+							<?php foreach ($ticket->entries->all() as $entry): ?>
+								<tr>
+									<td><input type="checkbox" name="<?php echo "entry[$entry]"; ?>" value="<?php echo $entry->participant->id; ?>" /></td>
+									<td><?php echo $entry->participant->type(); ?></td>
+									<td><?php echo $entry->participant->first_name . ' ' . $entry->participant->last_name; ?></td>
+									<td><?php echo date('d.m.Y G:i', $entry->created) . ' Uhr'; ?></td>
+								</tr>
+							<?php endforeach; ?>
+							</tbody>
+						</table>
+					</div>
+			</fieldset>
+			<fieldset>
+				<legend>Nachricht <input id="participants-form-entry-switch" type="checkbox" /></legend>
+				<div id="participants-form-text" style="display: none;"><textarea style="width: 500px; height: 200px;"></textarea></div>
+			</fieldset>
+		</fieldset>
+	</form>
+</div>
+
 <script type="text/javascript" src="static/tinymce/tiny_mce.js"></script>
 <script>
 	tinyMCE.init({
@@ -141,11 +314,6 @@
 	$(document).ready(function () {
 		$('#info_tabs').tabs({ heightStyle: "auto" });
 		$('#response_tabs').tabs({ heightStyle: "auto" });
-		
-		$('#action-toggle').bind('click', function () {
-			$checked = $(this).prop('checked');
-			$('.action-selectbox', '.overview .table').prop('checked', $checked);
-		});
 	
 		$('#send_response_button').bind('click', function () {
 			$('#send_response_dialog').dialog('open');
@@ -200,12 +368,33 @@
 		$('select[name=partner]').bind('change', function (event) {
 			var partner = $(this).val();
 			if (partner > 0) {
-				$('a[href="#response_tabs-3"]', '#response_tabs').show();
+				$('a[href="#response_tabs-3"]', '#response_tabs').parent().show();
 			} else {
-				$('a[href="#response_tabs-3"]', '#response_tabs').hide();
+				$('a[href="#response_tabs-3"]', '#response_tabs').parent().hide();
 			}
 		});
 
-		//$('textarea.autoresize').autosize();
+		var participants = $('#participants-dialog');
+
+		participants.dialog({
+			title: 'Antwort',
+			autoOpen: false,
+			height: 'auto',
+			width: '585',
+			modal: true,
+			buttons: {
+				'Senden': function () {
+					$('#participants-form').submit();
+				}
+			}
+		});
+
+		$('#participants-button').bind('click', function () {
+			participants.dialog('open');
+		});
+
+		$('#participants-form-entry-switch').bind('change', function () {
+			$('#participants-form-text').toggle();
+		});
 	});
 </script>

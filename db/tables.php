@@ -238,9 +238,7 @@ abstract class BaseTable {
 		
 		foreach ($objects as $obj) {
 			$sel = ($selected == $obj->id) ? 'selected="selected"' : '';
-			$select[] = '<option value="' . $obj->id . "\" $sel>";
-			$select[] = $obj->name;
-			$select[] = '</option>';
+			$select[] = '<option value="' . $obj->id . "\" $sel>$obj</option>";
 		}
 		
 		$select[] = "</select>";
@@ -373,6 +371,10 @@ class API extends BaseTable {
 				'name' => new CharField('name', 75),
 		);
 	}
+	
+	function __toString() {
+		return (string) $this->name;
+	}
 }
 
 class Customer extends BaseTable {
@@ -391,7 +393,6 @@ class Customer extends BaseTable {
 				'attributes' => new AttributeValueField($instance),
 		);
 	}
-
 }
 
 class CustomerAddress extends BaseTable {
@@ -410,6 +411,49 @@ class CustomerAddress extends BaseTable {
 				'customer' => new ForeignKeyField('customer_id', 'Customer'),
 				'attributes' => new AttributeValueField($instance),
 		);
+	}
+}
+
+class Contact extends BaseTable {
+	protected static $data = array(
+			'table' => 'ot_contact',
+			'title' => 'Kontakt',
+			'title_plural' => 'Kontakte',
+	);
+	
+	protected static $member = array();
+	
+	protected static function getFields($instance = null) {
+		return array(
+				'id' => new PrimaryKeyField(),
+				'title' => new IntegerField('title'),
+				'first_name' => new CharField('first_name', 50),
+				'last_name' => new CharField('last_name', 50),
+				'mail' => new CharField('mail', 75),
+		);
+	}
+	
+	protected $titles = array('Unbekannt', 'Herr', 'Frau');
+	
+	public function title($name = '', $class = '') {
+		if (!$name) {
+			return $this->titles[$this->title];
+		}
+	
+		$class = ($class) ? "class=\"$class\"" : '';
+	
+		$select[] = "<select name=\"$name\" $class>";
+		foreach ($this->titles as $code => $title) {
+			$selected = ($code == $this->title) ? 'selected="selected"' : '';
+			$select[] = "<option value=\"$code\" $selected>$title</option>";
+		}
+		$select[] = "</select>";
+	
+		return join('', $select);
+	}
+	
+	function __toString() {
+		return (string) $this->first_name . ' ' . $this->last_name;
 	}
 }
 
@@ -446,6 +490,10 @@ class DataSource extends BaseTable {
 			$options[$option->option_name] = $option->option_value;
 		}
 		return $options;
+	}
+	
+	function __toString() {
+		return (string) $this->name;
 	}
 }
 
@@ -505,7 +553,7 @@ class Order extends BaseTable {
 				'data_source' => new ForeignKeyField('data_source_id', 'DataSource'),
 				'positions' => new BackLinkField($instance, 'order_id', 'Position', 'order'),
 				'attributes' => new AttributeValueField($instance),
-				'tickets' => new ReferenceLinkField($instance, 'Ticket', 'ref_table', 'ref_id'),
+				//'tickets' => new ReferenceLinkField($instance, 'Ticket', 'ref_table', 'ref_id'),
 		);
 	}
 }
@@ -528,11 +576,33 @@ class Position extends BaseTable {
 	}
 }
 
+class MailTemplate extends BaseTable {
+	protected static $data = array(
+			'table' => 'ot_mail_template',
+			'title' => 'Template',
+			'title_plural' => 'Templates',
+	);
+	
+	protected static $member = array();
+	
+	protected static function getFields($instance = null) {
+		return array(
+				'id' => new PrimaryKeyField(),
+				'name' => new CharField('name', 100),
+				'text' => new TextField('text'),
+		);
+	}
+	
+	function __toString() {
+		return (string) $this->name;
+	}
+}
+
 class Ticket extends BaseTable {
 	protected static $data = array(
 			'table' => 'ot_ticket',
-			'title' => '',
-			'title_plural' => '',
+			'title' => 'Ticket',
+			'title_plural' => 'Tickets',
 	);
 
 	protected static $member = array();
@@ -543,11 +613,8 @@ class Ticket extends BaseTable {
 				'category' => new ForeignKeyField('ticket_category_id', 'TicketCategory'),
 				'status' => new IntegerField('status'),
 				'ref_table' => new CharField('ref_table', 50),
-				'inquirer_title' => new BooleanField('inquirer_title'),
-				'inquirer_first_name' => new CharField('inquirer_first_name', 50),
-				'inquirer_last_name' => new CharField('inquirer_last_name', 50),
-				'inquirer_mail' => new CharField('inquirer_mail', 80),
 				'created' => new IntegerField('timestamp_created'),
+				'participants' => new BackLinkField($instance, 'ticket_id', 'TicketParticipant', 'ticket'),
 				'entries' => new BackLinkField($instance, 'ticket_id', 'TicketEntry', 'ticket'),
 				'references' => new BackLinkField($instance, 'ticket_id', 'TicketReference', 'ticket'),
 		);
@@ -578,6 +645,67 @@ class Ticket extends BaseTable {
 		if ($count = MySQL::fetch($result)) {
 			return (int) $count['count'];
 		}
+	}
+}
+
+class TicketParticipant extends BaseTable {
+	protected static $data = array(
+			'table' => 'ot_ticket_participant',
+			'title' => 'Teilnehmer',
+			'title_plural' => 'Teilnehmer',
+	);
+	
+	protected static $member = array();
+	
+	protected static function getFields($instance = null) {
+		return array(
+				'id' => new PrimaryKeyField(),
+				'ticket' => new ForeignKeyField('ticket_id', 'Ticket'),
+				'type' => new IntegerField('type'),
+				'token' => new CharField('token', 64),
+				'title' => new IntegerField('title'),
+				'first_name' => new CharField('first_name', 50),
+				'last_name' => new CharField('last_name', 50),
+				'mail' => new CharField('mail', 75),
+		);
+	}
+	
+	protected $titles = array('Unbekannt', 'Herr', 'Frau');
+	
+	protected $types = array('Mitarbeiter', 'Kunde', 'Extern');
+	
+	public function title($name = '', $class = '') {
+		if (!$name) {
+			return $this->titles[$this->title];
+		}
+		
+		$class = ($class) ? "class=\"$class\"" : '';
+		
+		$select[] = "<select name=\"$name\" $class>";
+		foreach ($this->titles as $code => $title) {
+			$selected = ($code == $this->title) ? 'selected="selected"' : '';
+			$select[] = "<option value=\"$code\" $selected>$title</option>";
+		}
+		$select[] = "</select>";
+		
+		return join('', $select);
+	}
+
+	public function type($name = '', $class = '') {
+		if (!$name) {
+			return $this->types[$this->type];
+		}
+		
+		$class = ($class) ? "class=\"$class\"" : '';
+		
+		$select[] = "<select name=\"$name\" $class>";
+		foreach ($this->types as $code => $type) {
+			$selected = ($code == $this->type) ? 'selected="selected"' : '';
+			$select[] = "<option value=\"$code\" $selected>$type</option>";
+		}
+		$select[] = "</select>";
+		
+		return join('', $select);
 	}
 }
 
@@ -614,6 +742,10 @@ class TicketCategory extends BaseTable {
 				'name' => new CharField('name', 50),
 		);
 	}
+	
+	function __toString() {
+		return (string) $this->name;
+	}
 }
 
 class TicketEntry extends BaseTable {
@@ -629,7 +761,7 @@ class TicketEntry extends BaseTable {
 		return array(
 				'id' => new PrimaryKeyField(),
 				'ticket' => new ForeignKeyField('ticket_id', 'Ticket'),
-				'response' => new BooleanField('is_response'),
+				'participant' => new ForeignKeyField('participant_id', 'TicketParticipant'),
 				'created' => new IntegerField('timestamp_created'),
 				'text' => new TextField('text'),
 		);
@@ -661,6 +793,10 @@ class Attribute extends BaseTable {
 		}
 		return array();
 	}
+	
+	function __toString() {
+		return (string) $this->name;
+	}
 }
 
 class AttributeSet extends BaseTable {
@@ -678,6 +814,10 @@ class AttributeSet extends BaseTable {
 				'name' => new CharField('name', 75),
 				'attributes' => new BackLinkField($instance, 'attribute_set_id', 'AttributeSetHasAttribute', 'attribute_set'),
 		);
+	}
+	
+	function __toString() {
+		return (string) $this->name;
 	}
 }
 
@@ -785,6 +925,45 @@ class Supplier extends BaseTable {
 		return array(
 				'id' => new PrimaryKeyField(),
 				'name' => new CharField('name', 100),
+				'contacts' => new ManyToManyField($instance, 'Contact', 'ot_supplier_has_contact', 'supplier_id', 'contact_id'),
+		);
+	}
+}
+
+class SupplierHasContact extends BaseTable {
+	protected static $data = array(
+			'table' => 'ot_supplier_has_contact',
+			'title' => '',
+			'title_plural' => '',
+	);
+	
+	protected static $member = array();
+	
+	protected static function getFields($instance = null) {
+		return array(
+				'id' => new PrimaryKeyField(),
+				'supplier' => new ForeignKeyField('supplier_id', 'Supplier'),
+				'contact' => new ForeignKeyField('contact_id', 'Contact'),
+		);
+	}
+}
+
+class SupplierHasDataSource extends BaseTable {
+	protected static $data = array(
+			'table' => 'ot_supplier_has_data_source',
+			'title' => '',
+			'title_plural' => '',
+	);
+	
+	protected static $member = array();
+	
+	protected static function getFields($instance = null) {
+		return array(
+				'id' => new PrimaryKeyField(),
+				'supplier' => new ForeignKeyField('supplier_id', 'Supplier'),
+				'data_source' => new ForeignKeyField('data_source_id', 'DataSource'),
+				'external_name' => new CharField('external_name', 200),
+				'external_id' => new CharField('external_id', 50),
 		);
 	}
 }
@@ -976,6 +1155,7 @@ class Table {
 			'ot_position' => 'Position',
 			'ot_customer' => 'Customer',
 			'ot_customer_address' => 'CustomerAddress',
+			'ot_mail_template' => 'MailTemplate',
 		);
 	
 	public static function get($table) {
