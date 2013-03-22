@@ -25,12 +25,15 @@ Ihr soforteinloesen.de Team";
 						'address' => 'no-reply@salesbutlers.com',
 						'name' => 'soforteinloesen.de'
 						),
-				'oliver.zander@salesbutlers.com',
+				'ecommerce@salesbutlers.com',
 				"Ihr Ticket #$id",
 				array(
 						'html' => nl2br($html),
 						'text' => $html
 						)
 			);
+		
+		return $response;
 	}
+	return array('success' => FALSE, 'error' => 'Keine Mail-Adresse gefunden!');
 } ?>

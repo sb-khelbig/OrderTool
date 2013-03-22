@@ -32,6 +32,21 @@
 					<input type="hidden" name="api_action" value="import_suppliers" />
 					<input type="submit" value="Importieren" />
 				</form>
+				<?php if ($suppliers = $data_source->suppliers->all()): ?>
+					<form action="<?php echo $ot->get_link("data_source", $data_source->id); ?>" method="POST" enctype="multipart/form-data">
+						<input type="hidden" name="action" value="api" />
+						<input type="hidden" name="api_action" value="save_suppliers" />
+						<table>
+							<?php foreach ($suppliers as $supplier): ?>
+								<tr>
+									<td><?php echo $supplier->external_name; ?></td>
+									<td><?php echo Supplier::create_dropdown_menu("supplier[" . $supplier->id . "]", 'Wählen...', $supplier->supplier); ?></td>
+								</tr>
+							<?php endforeach; ?>
+						</table>
+						<input type="submit" value="Speichern" />
+					</form>
+				<?php endif; ?>
 			</div>
 		</div>
 	</div>
@@ -40,7 +55,7 @@
 <script>
 	jQuery(document).ready(function() {
 		$('#api_shopware_tabs').tabs();
-		$('#api_shopware_import_accordion').accordion({ heightStyle: "fill" });
+		$('#api_shopware_import_accordion').accordion({ heightStyle: "content" });
 	});
 </script>
 

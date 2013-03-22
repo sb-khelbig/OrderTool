@@ -50,6 +50,24 @@ class MySQL {
 		return FALSE;
 	}
 	
+	public static function build_where_clause($conditions, $operator = 'AND') {
+		$where = array();
+		foreach ($conditions as $field => $value) {
+			$field = static::quote($field);
+			if (is_array($value)) {
+				foreach ($value as $val) {
+					$values[] = (is_object($val)) ? $val->id : $val;
+				}
+				$where[] = "$field IN (" . join(', ', $values) . ")";
+			} elseif (is_object($value)) {
+				$where[] = "$field = '" . $value->id . "'";
+			} else {
+				$where[] = "$field = '$value'";
+			}
+		}
+		return ($where) ? join(" $operator ", $where) : '1';
+	}
+	
 	public static function last_error() {
 		if ($last = array_pop(static::$errors)) {
 			static::$errors[] = $last;
@@ -69,6 +87,10 @@ class MySQL {
 		return mysql_real_escape_string($string, static::get_connection());
 	}
 	
+	public static function quote($field) {
+		return "`$field`";
+	}
+	
 	public static function query($query, $error = TRUE) {
 		//echo $query;
 		
@@ -76,6 +98,35 @@ class MySQL {
 			return $result;
 		} else {
 			return static::error($error);
+		}
+	}
+	
+	public static function get($conditions, $table, $error = TRUE) {
+		$where = static::build_where_clause($conditions);
+		
+		$query = "	SELECT *
+					FROM " . static::quote($table) . "
+					WHERE $where";
+		
+		if ($result = static::query($query)) {
+			switch (static::num_rows($result)) {
+				case 0:
+					$err = new MySQLError("No entry fulfills the conditions: $where", 0, static::last_error());
+					static::$errors[] = $err;
+					if ($error) throw $err;
+					return array();
+				case 1:
+					return MySQL::fetch($result);
+				default:
+					$err = new MySQLError("Conditions not unique: $where", 0, static::last_error());
+					static::$errors[] = $err;
+					if ($error) throw $err;
+					return array();
+			}
+		} else {
+			static::error(FALSE);
+			if ($error) throw static::last_error();
+			return array();
 		}
 	}
 	
@@ -168,11 +219,11 @@ function create_where_clause($conditions, $operator = 'AND') {
 
 function insert($table, array $values) {
 	$insert = array();
-	foreach ($values as $value) {
-		$insert[] = $value;
+	foreach ($values as $field => $value) {
+		$insert[MySQL::quote($field)] = $value;
 	}
 	$query = "	INSERT INTO $table
-					(" . join(', ', array_keys($values)) . ")
+					(" . join(', ', array_keys($insert)) . ")
 				VALUES (" . join(', ', $insert) . ")";
 	if ($result = MySQL::query($query)) {
 		return MySQL::insert_id();

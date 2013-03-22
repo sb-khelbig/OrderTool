@@ -1,4 +1,11 @@
 <?php
+function generate_token($object, $key, $algo = 'sha256') {
+	$data = $object->toArray();
+	$data['key'] = $key;
+	$token = json_encode($data);
+	return hash($algo, $token);
+}
+
 function save_ticket($category, $table, $references, $text, $data) {
 	$ticket = new Ticket();
 	$ticket->category = $category;
@@ -57,13 +64,24 @@ function save_ticket($category, $table, $references, $text, $data) {
 		$ticket_ref->ref_id = $reference;
 	}
 	
+	$entry_right = new TicketEntryRight();
+	$entry->rights->add($entry_right);
+	$entry_right->participant = $participant;
+	
 	$tickets = array($ticket);
 	
 	Ticket::bulk_save($tickets);
 	
 	include __DIR__ . '/confirmation_mail.php';
 	
-	confirmation_mail($ticket, $participant);
+	$participant->token = generate_token($participant, $GLOBALS['key']);
+	$participant->update();
+	
+	$response = confirmation_mail($ticket, $participant);
+	
+	if (!$response['success']) {
+		throw new Exception($response['error']);
+	} 
 	
 	return $ticket->id;
 } ?>

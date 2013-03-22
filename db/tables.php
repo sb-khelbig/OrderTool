@@ -55,7 +55,11 @@ abstract class BaseTable {
 		return $orders;
 	}
 	
-	public static function &all($limit = null) {
+	public static function &all($limit = null, $renew = FALSE) {
+		if (isset(static::$data['all_query_done']) && !$renew) {
+			return static::$member;
+		}
+		
 		$limit = $limit ? "LIMIT $limit" : "";
 		
 		$query = "	SELECT *
@@ -68,6 +72,7 @@ abstract class BaseTable {
 					static::$member[$row['id']] = new static($row, $status = 'loaded');
 				}
 			}
+			static::$data['all_query_done'] = True;
 			return static::$member;
 		}
 		throw new MySQLError();
@@ -152,11 +157,11 @@ abstract class BaseTable {
 		
 		$fk_field_names = array();
 		foreach (array_keys($fields['Insert']) as $name) {
-			$fk_field_names[] = $field_names[$name]->savable();
+			$fk_field_names[] = MySQL::quote($field_names[$name]->savable());
 		}
 		
 		foreach (array_keys($fields['ForeignKeyField']) as $name) {
-			$fk_field_names[] = $field_names[$name]->savable();
+			$fk_field_names[] = MySQL::quote($field_names[$name]->savable());
 		}
 		
 		foreach ($insert as $index => &$values) {
@@ -515,6 +520,7 @@ class DataSource extends BaseTable {
 				'api' => new ForeignKeyField('api_id', 'API'),
 				'options' => new BackLinkField($instance, 'data_source_id', 'DataSourceOption', 'data_source'),
 				'attributes' => new BackLinkField($instance, 'data_source_id', 'DataSourceHasAttribute', 'data_source'),
+				'suppliers' => new BackLinkField($instance, 'data_source_id', 'SupplierHasDataSource', 'data_source'),
 		);
 	}
 	
@@ -806,6 +812,26 @@ class TicketEntry extends BaseTable {
 				'participant' => new ForeignKeyField('participant_id', 'TicketParticipant'),
 				'created' => new IntegerField('timestamp_created'),
 				'text' => new TextField('text'),
+				'rights' => new BackLinkField($instance, 'entry_id', 'TicketEntryRight', 'entry')
+		);
+	}
+}
+
+class TicketEntryRight extends BaseTable {
+	protected static $data = array(
+			'table' => 'ot_ticket_entry_right',
+			'title' => 'Recht',
+			'title_plural' => 'Rechte',
+	);
+	
+	protected static $member = array();
+	
+	protected static function getFields($instance = null) {
+		return array(
+				'id' => new PrimaryKeyField(),
+				'entry' => new ForeignKeyField('entry_id', 'TicketEntry'),
+				'participant' => new ForeignKeyField('participant_id', 'TicketParticipant'),
+				'read' => new BooleanField('read'),
 		);
 	}
 }
@@ -969,6 +995,10 @@ class Supplier extends BaseTable {
 				'name' => new CharField('name', 100),
 				'contacts' => new ManyToManyField($instance, 'Contact', 'ot_supplier_has_contact', 'supplier_id', 'contact_id'),
 		);
+	}
+	
+	function __toString() {
+		return (string) $this->name;
 	}
 }
 
