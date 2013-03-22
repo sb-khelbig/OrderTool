@@ -356,6 +356,48 @@ abstract class BaseTable {
 	}
 }
 
+class User extends BaseTable {
+	protected static $data = array(
+		'table' => 'ot_user',
+		'title' => 'Benutzer',
+		'title_plural' => 'Benutzer',
+	);
+	
+	protected static $member = array();
+	
+	protected static function getFields($instance = null) {
+		return array(
+				'id' => new PrimaryKeyField(),
+				'title' => new IntegerField('title'),
+				'first_name' => new CharField('first_name', 50),
+				'last_name' => new CharField('last_name', 50),
+				'mail' => new CharField('mail', 75),
+				'password' => new CharField('password', 64),
+		);
+	}
+	
+	public function title($name = '', $class = '') {
+		if (!$name) {
+			return $this->titles[$this->title];
+		}
+	
+		$class = ($class) ? "class=\"$class\"" : '';
+	
+		$select[] = "<select name=\"$name\" $class>";
+		foreach ($this->titles as $code => $title) {
+			$selected = ($code == $this->title) ? 'selected="selected"' : '';
+			$select[] = "<option value=\"$code\" $selected>$title</option>";
+		}
+		$select[] = "</select>";
+	
+		return join('', $select);
+	}
+	
+	function __toString() {
+		return (string) $this->first_name . ' ' . $this->last_name;
+	}
+}
+
 class API extends BaseTable {
 	protected static $data = array(
 			'table' => 'ot_api',

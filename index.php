@@ -1,4 +1,4 @@
-<?php session_start(); $_SESSION['UserID'] = 0; ?>
+<?php session_start(); ?>
 
 <?php include ('db/mysql.php'); ?>
 

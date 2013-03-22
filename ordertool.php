@@ -26,6 +26,14 @@ class OrderTool {
 		return $this->sub_page_prefix;
 	}
 	
+	private function check_login() {
+		if (isset($_SESSION['user_id'])) {
+			return User::get($_SESSION['user_id']);
+		} else {
+			return FALSE;
+		}
+	}
+	
 	private function get_module(&$get) {
 		$module_prefix = $this->get_module_prefix();
 		if (isset($get[$module_prefix])) {
@@ -55,6 +63,10 @@ class OrderTool {
 	}
 	
 	public function get_include_string(&$info, &$get, &$post) {
+		if (!$GLOBALS['user'] = $this->check_login()) {
+			return 'login.php';
+		}
+		
 		if ($module = $this->get_module($get)) {
 			$include_string = array($module, '/', 'ot', '_', $module, '_');
 			
