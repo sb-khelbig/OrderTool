@@ -183,12 +183,14 @@
 
 	//// ORDER POSITIONS
 	$order_positions_query = "
-	SELECT position.*, voucher.restrictarticles, code.code
+	SELECT position.*, voucher.restrictarticles, code.code, article.supplierID
 	FROM s_order_details AS position
 	LEFT JOIN s_emarketing_voucher_codes AS code
 			ON (position.articleID = code.id)
 	LEFT JOIN s_emarketing_vouchers AS voucher
 			ON (code.voucherID = voucher.id)
+        LEFT JOIN s_articles AS article
+        		ON (article.id = position.articleID)
 	WHERE orderID IN (".join(",", array_keys($orders)).")
 	ORDER BY orderID";
 	
