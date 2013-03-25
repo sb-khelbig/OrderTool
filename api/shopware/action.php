@@ -13,6 +13,9 @@
 		case 'save_suppliers':
 			include __DIR__."/action_save_suppliers.php";
 			break;
+		case 'save_settings_general':
+			include __DIR__."/settings/action_save_settings_general.php";
+			break;
 		default:
 			echo "ERROR: NO API_ACTION DEFINED!";
 			break;

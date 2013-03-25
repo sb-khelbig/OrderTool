@@ -9,7 +9,22 @@
 		Start
 	</div>
 	<div id="api_shopware_tabs_settings">
-		<p>Morbi tincidunt, dui sit amet facilisis feugiat, odio metus gravida ante, ut pharetra massa metus id nunc. Duis scelerisque molestie turpis. Sed fringilla, massa eget luctus malesuada, metus eros molestie lectus, ut tempus eros massa ut dolor. Aenean aliquet fringilla sem. Suspendisse sed ligula in ligula suscipit aliquam. Praesent in eros vestibulum mi adipiscing adipiscing. Morbi facilisis. Curabitur ornare consequat nunc. Aenean vel metus. Ut posuere viverra nulla. Aliquam erat volutpat. Pellentesque convallis. Maecenas feugiat, tellus pellentesque pretium posuere, felis lorem euismod felis, eu ornare leo nisi vel felis. Mauris consectetur tortor et purus.</p>
+		<div id="api_shopware_settings_accordion">
+			<h3>Allgemein</h3>
+			<div>
+				<form action="<?php echo $ot->get_link("data_source", $data_source->id); ?>" method="POST" enctype="multipart/form-data">
+					<input type="hidden" name="action" value="api" />
+					<input type="hidden" name="api_action" value="save_settings_general" />
+					<?php foreach ($data_source->getOptionsArray() as $name => $value): ?>
+						<input type="hidden" name="setting_name[]" value="<?php echo $name; ?>">
+						<label for="setting_value[]"><?php echo $name; ?>: </label>
+						<input type="text" name="setting_value[]" value="<?php echo $value; ?>">
+					<?php endforeach;?>
+					<br />
+					<input type="submit" value="Speichern" />
+				</form>
+			</div>
+		</div>
 	</div>
 	<div id="api_shopware_tabs_attributes">
 		<?php include "api/ot_api_attributes_matching.php"; ?>
@@ -56,6 +71,7 @@
 	jQuery(document).ready(function() {
 		$('#api_shopware_tabs').tabs();
 		$('#api_shopware_import_accordion').accordion({ heightStyle: "content" });
+		$('#api_shopware_settings_accordion').accordion({ heightStyle: "content" });
 	});
 </script>
 
