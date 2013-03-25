@@ -1,7 +1,7 @@
 <?php ob_start();
 
 $json = array('error' => TRUE, 'errorMsg' => 'Unknown error');
-$titles = array(0 => "Frau", 1 => "Herr");
+$titles = array(0 => "", 1 => "Herr", 2 => "Frau");
 
 try {
 	$token = isset($_GET['token']) ? $_GET['token'] : FALSE;
