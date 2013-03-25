@@ -117,6 +117,7 @@
 			"firstname" => $attr_assoc["ot_customer"]["firstname"],
 			"lastname" => $attr_assoc["ot_customer"]["lastname"],
 	);
+	$customer_addition_done = array();
 	$customer_billing_address_query = "
 	SELECT * FROM s_order_billingaddress WHERE orderID IN (".join(",", array_keys($orders)).")
 	";
@@ -137,11 +138,15 @@
 				$billing_address->attributes->add($attr, $customer_billing_address[$field_name]);
 			}
 		}
-		foreach ($customer_addition_fields as $field_name => $attr)
-		{
-			if ($attr)
+		
+		if (!array_key_exists($customer_billing_address["userID"], $customer_addition_done)) {
+			$customer_addition_done[$customer_billing_address["userID"]] = TRUE;
+			foreach ($customer_addition_fields as $field_name => $attr)
 			{
-				$customers[$customer_billing_address["userID"]]->attributes->add($attr, $customer_billing_address[$field_name]);
+				if ($attr)
+				{
+					$customers[$customer_billing_address["userID"]]->attributes->add($attr, $customer_billing_address[$field_name]);
+				}
 			}
 		}
 	}

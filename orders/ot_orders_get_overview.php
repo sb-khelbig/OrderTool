@@ -14,8 +14,7 @@ while ($row = MySQL::fetch($result)) {
 }
 
 $query = "	SELECT *
-			FROM ot_order
-			LIMIT 1000, 200";
+			FROM ot_order";
 
 $result = MySQL::query($query);
 

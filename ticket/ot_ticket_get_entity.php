@@ -21,17 +21,7 @@ $values = Value::filter(array(
 		'ref_id' => $position_ids,
 		'attribute_id' => 14,
 	)
-);
-
-$query = "	SELECT sup.id
-			FROM ot_supplier AS sup
-			JOIN ot_product_offer AS po
-				ON po.supplier_id = sup.id
-			JOIN ot_product_offer_has_data_source AS pods
-				ON pods.offer_id = po.id
-			WHERE ";
-
-?>
+); ?>
 
 <h1>Ticket ID <?php echo $ticket->id; ?></h1>
 
@@ -161,10 +151,10 @@ $query = "	SELECT sup.id
 
 <h2>Korrespondenz</h2>
 
-<button id="send_response_button">Antworten</button>
-<button id="add_response_button">Kundenantwort einfügen</button>
-
-<br />
+<div style="margin-bottom: 5px;">
+	<button id="send_response_button">Antworten</button>
+	<button id="add_response_button">Kundenantwort einfügen</button>
+</div>
 
 <?php foreach (array_reverse($ticket->entries->all(), TRUE) as $entry): ?>
 	<fieldset>
@@ -179,44 +169,55 @@ $query = "	SELECT sup.id
 
 
 <div id="send_response_dialog" style="font-size: 10pt">
-	<form id="send_response_form" action="<?php echo $ot->get_link('ticket', $ticket->id); ?>" method="POST" enctype="multipart/form-data">
-		<input type="hidden" name="action" value="respond" />
-		<div id="response_tabs" style="font-size: 10pt;">
-			<ul>
-				<li><a href="#response_tabs-1">Optionen</a></li>
-				<li><a href="#response_tabs-2">Nachricht (Kunde)</a></li>
-				<li style="display: none;"><a href="#response_tabs-3">Nachricht (Partner)</a></li>
-				<li><a href="#response_tabs-4">Bestellung</a></li>
-				<li><a href="#response_tabs-5">Liste</a></li>
-			</ul>
-			<div id="response_tabs-1">
-				<label for="template">Vorlage:</label>
-				<?php echo MailTemplate::create_dropdown_menu('template', 'Keine Vorlage verwenden'); ?> <br />
-				<label for="partner">Anbieter:</label>
-				<select name="partner">
-					<option value="0">Anbieter nicht informieren</option>
-					<option value="1">Anbieter informieren</option>
-				</select>
-			</div>
-			<div id="response_tabs-2">
-				<textarea name="text_customer" rows="20" style="width: 100%;"></textarea>
-			</div>
-			<div id="response_tabs-3">
-				<input type="text" name="partner_mail" placeholder="eMail Adresse" style="width: 100%"/> <br />
-				<textarea name="text_partner" rows="20" style="width: 100%;"></textarea>
-			</div>
-			<div id="response_tabs-4">
-				
-			</div>
-			<div id="response_tabs-5">
-			
-			</div>
+	<fieldset>
+		<legend>Sichtbarkeit</legend>
+		<div>
+			<label for="selector">Auswählen:</label>
+			<select name="selector">
+				<option value="<?php echo $inquirer->id; ?>">Kunde</option>
+				<?php if ($partners = TicketParticipant::filter(array('ticket_id' => $ticket, 'type' => 0))): ?>
+				<optgroup label="Partner">
+					<?php foreach ($partners as $partner): ?>
+						<option value="<?php echo $partner->id; ?>"><?php echo $partner->last_name; ?></option>
+					<?php endforeach; ?>
+				</optgroup>
+				<?php endif; ?>
+				<option>Mitarbeiter</option>
+			</select>
+			<input type="button" value="Markieren" />
 		</div>
-	</form>
+		<table style="font-size: 12px;">
+			<thead>
+				<tr>
+					<th><input type="checkbox" /></th>
+					<th>Teilnehmer</th>
+					<th>Name</th>
+					<th>Uhrzeit</th>
+				</tr>
+			</thead>
+			<tbody>
+			<?php foreach ($ticket->entries->all() as $entry): ?>
+				<tr>
+					<td><input type="checkbox" name="<?php echo "entry[$entry]"; ?>" value="<?php echo $entry->participant->id; ?>" /></td>
+					<td><?php echo $entry->participant->type(); ?></td>
+					<td><?php echo $entry->participant->first_name . ' ' . $entry->participant->last_name; ?></td>
+					<td><?php echo date('d.m.Y G:i', $entry->created) . ' Uhr'; ?></td>
+				</tr>
+			<?php endforeach; ?>
+			</tbody>
+		</table>
+	</fieldset>
+	<fieldset>
+		<legend>Nachricht</legend>
+		<div style="margin: 2px;">Template: <?php echo MailTemplate::create_dropdown_menu('template', 'Freitext'); ?></div>
+		<textarea name="message" style="width: 100%;"></textarea>
+	</fieldset>
 </div>
 
-<div id="add_response_dialog" style="font-size: 10pt">
-	<form id="add_response_form" action="<?php echo $ot->get_link('ticket', $ticket->id); ?>" method="POST" enctype="multipart/form-data">
+
+ 
+<div id="add_entry_dialog" style="font-size: 10pt">
+	<form id="add_entry_form" action="<?php echo $ot->get_link('ticket', $ticket->id); ?>" method="POST" enctype="multipart/form-data">
 		<input type="hidden" name="action" value="addresponse" />
 		<fieldset>
 			<legend>Text</legend>
@@ -314,12 +315,15 @@ $query = "	SELECT sup.id
 	$(document).ready(function () {
 		$('#info_tabs').tabs({ heightStyle: "auto" });
 		$('#response_tabs').tabs({ heightStyle: "auto" });
-	
+
+		var send_response_dialog = $('#send_response_dialog');
+		var send_response_form = $('#send_response_form', send_response_dialog);
+		
 		$('#send_response_button').bind('click', function () {
-			$('#send_response_dialog').dialog('open');
+			send_response_dialog.dialog('open');
 		});
 	
-		$('#send_response_dialog').dialog({
+		send_response_dialog.dialog({
 			title: 'Kundenantwort',
 			autoOpen: false,
 			height: 'auto',
@@ -327,32 +331,35 @@ $query = "	SELECT sup.id
 			modal: true,
 			buttons: {
 				'Senden': function () {
-					$('#send_response_form').submit();
+					send_response_form.submit();
 				}
 			}
 		});
 		
-		var form = $('#send_response_form');
-		$('select[name=template]', form).bind('change', function () {
+		
+		$('select[name=template]', send_response_form).bind('change', function () {
 			var id = $(this).val();
+			var text = $('textarea[name=message]', send_response_form);
 			if (id > 0) {
 				$.get('ticket/ot_ticket_ajax.php', {id: id, action: 'gettemplate'}, function (data) {
 					if (data['success']) {
-						$('textarea[name=text_customer]').val(data['data']['text']);
+						text.val(data['data']['text']);
 					} else {
 						alert('Template konnte nicht geladen werden: ' + data['error']);
 					}
 				}, 'json');
 			} else {
-				$('textarea[name=text]').val('');
+				text.val('');
 			}
 		});
 
-		$('#add_response_button').bind('click', function () {
-			$('#add_response_dialog').dialog('open');
+		var add_entry_dialog = $('#add_entry_dialog');
+
+		$('#add_entry_button').bind('click', function () {
+			add_entry_dialog.dialog('open');
 		});
 	
-		$('#add_response_dialog').dialog({
+		add_entry_dialog.dialog({
 			title: 'Antwort',
 			autoOpen: false,
 			height: 'auto',
@@ -360,17 +367,8 @@ $query = "	SELECT sup.id
 			modal: true,
 			buttons: {
 				'Senden': function () {
-					$('#add_response_form').submit();
+					$('#add_entry_form', add_entry_dialog).submit();
 				}
-			}
-		});
-		
-		$('select[name=partner]').bind('change', function (event) {
-			var partner = $(this).val();
-			if (partner > 0) {
-				$('a[href="#response_tabs-3"]', '#response_tabs').parent().show();
-			} else {
-				$('a[href="#response_tabs-3"]', '#response_tabs').parent().hide();
 			}
 		});
 

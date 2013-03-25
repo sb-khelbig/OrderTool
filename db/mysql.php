@@ -4,6 +4,18 @@ $db = 'OrderTool2';
 $user = 'ecommerce';
 $password = 'sFWe5ZWqfvTB4JKH';
 
+class MySQLError extends Exception {
+	function __construct($message = null, $code = null, $previous = null) {
+		if ($message == null) {
+			$message = mysql_error();
+		}
+		if ($code == null) {
+			$code = mysql_errno();
+		}
+		parent::__construct($message, $code, $previous);
+	}
+}
+
 class MySQL {
 	protected static $data;
 	protected static $connection;
@@ -23,12 +35,13 @@ class MySQL {
 		static::$connection = mysql_connect(
 				static::$data['host'],
 				static::$data['username'],
-				static::$data['password']);
+				static::$data['password']
+			);
 	}
 	
 	protected static function get_connection() {
 		if (!static::$connection) {
-			throw new MySQLError('Please connect first!', 0);
+			throw new MySQLError(TRUE, 'Please connect first!', 0);
 		}
 		
 		if (!mysql_ping(static::$connection)) {
@@ -41,11 +54,16 @@ class MySQL {
 		return static::$connection;
 	}
 	
-	protected static function error($error = TRUE) {
-		$err = new MySQLError(mysql_error(static::$connection), mysql_errno(static::$connection), static::last_error());
-		static::$errors[] = $err;
+	protected static function error($error = TRUE, $msg = null, $code = null) {
+		if ($msg == null) {
+			$msg = mysql_error(static::$connection);
+		}
+		if ($code == null) {
+			$code = mysql_errno(static::$connection);
+		}
+		static::$errors[] = new MySQLError($msg, $code, static::last_error());
 		if ($error) {
-			throw $err;
+			throw static::last_error();
 		}
 		return FALSE;
 	}
@@ -69,18 +87,18 @@ class MySQL {
 	}
 	
 	public static function last_error() {
-		if ($last = array_pop(static::$errors)) {
-			static::$errors[] = $last;
+		$count = count(static::$errors);
+		if ($count > 0) {
+			return static::$errors[$count - 1];
 		}
-		return $last;
+		return null;
 	}
 	
 	public static function select_db($db) {
 		if (!mysql_select_db($db, static::get_connection())) {
 			return static::error();
 		}
-		static::$data['db'] = $db;
-		return TRUE;
+		return (bool) static::$data['db'] = $db;
 	}
 	
 	public static function escape($string) {
@@ -92,13 +110,10 @@ class MySQL {
 	}
 	
 	public static function query($query, $error = TRUE) {
-		//echo $query;
-		
 		if ($result = mysql_query($query, static::get_connection())) {
 			return $result;
-		} else {
-			return static::error($error);
 		}
+		return static::error($error);
 	}
 	
 	public static function get($conditions, $table, $error = TRUE) {
@@ -111,23 +126,19 @@ class MySQL {
 		if ($result = static::query($query)) {
 			switch (static::num_rows($result)) {
 				case 0:
-					$err = new MySQLError("No entry fulfills the conditions: $where", 0, static::last_error());
-					static::$errors[] = $err;
-					if ($error) throw $err;
-					return array();
+					return static::error($error, "No entry fulfills the conditions: $where", 0);
 				case 1:
 					return MySQL::fetch($result);
 				default:
-					$err = new MySQLError("Conditions not unique: $where", 0, static::last_error());
-					static::$errors[] = $err;
-					if ($error) throw $err;
-					return array();
+					return static::error($error, "Conditions not unique: $where", 0);
 			}
 		} else {
-			static::error(FALSE);
-			if ($error) throw static::last_error();
-			return array();
+			return static::error($error);
 		}
+	}
+	
+	public static function get_row_by_id($id, $table, $error = TRUE) {
+		return static::get(array('id' => $id), $table, $error);
 	}
 	
 	public static function fetch($result) {
@@ -165,18 +176,6 @@ class MySQL {
 
 MySQL::connect($host, $user, $password);
 MySQL::select_db($db);
-
-class MySQLError extends Exception {
-	function __construct($message = null, $code = null, $previous = null) {
-		if ($message == null) {
-			$message = mysql_error();
-		}
-		if ($code == null) {
-			$code = mysql_errno();
-		}
-		parent::__construct($message, $code, $previous);
-	}
-}
 
 function get_row_by_id($id, $table, $exception = TRUE, $identifier='id') {
 	$query = "	SELECT *
@@ -251,7 +250,7 @@ function build_select($table, $ids, $order_by = array()) {
 	foreach ($attributes as $attribute) {
 		$id = $attribute->id;
 		$atr_ids[] = $id;
-		$select[] = "MAX(CASE WHEN v.attribute_id = '$attribute' THEN v.data END) AS '$id'";
+		$select[] = "MAX(CASE WHEN v.attribute_id = '$id' THEN v.data END) AS '$id'";
 	}
 	
 	$order= '';
