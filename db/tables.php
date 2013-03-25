@@ -129,7 +129,6 @@ abstract class BaseTable {
 		if ($start) MySQL::start_transaction();
 		
 		$recursion[] = get_called_class();
-		var_dump($recursion);
 		
 		// save ForeignKeys 
 		foreach ($fields['ForeignKeyField'] as $name => &$data) {

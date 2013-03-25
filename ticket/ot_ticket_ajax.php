@@ -1,4 +1,4 @@
-<?php include ('../db/connection.php');
+<?php include ('../db/mysql.php'); include '../db/tables.php';
 
 if ($_SERVER["REQUEST_METHOD"]=='POST') {
 	$json = array('succes' => false, 'error' => 'Method not supported!');
@@ -9,15 +9,8 @@ if ($_SERVER["REQUEST_METHOD"]=='POST') {
 		if (isset($_GET['action'])) {
 			switch ($_GET['action']) {
 				case 'gettemplate':
-					$result = mysql_query("	SELECT text
-											FROM ot_mail_template
-											WHERE id = $id");
-					if ($result) {
-						if ($data = mysql_fetch_assoc($result)) {
-							$json = array('success' => true, 'data' => $data);
-						} else {
-							$json = array('success' => false, 'error' => 'No result!');
-						}
+					if ($template = MailTemplate::get($id)) {
+						$json = array('success' => true, 'data' => $template->toArray());
 					} else {
 						$json = array('success' => false, 'error' => 'MySQLError: ' . mysql_error());
 					}

@@ -21,7 +21,9 @@ $values = Value::filter(array(
 		'ref_id' => $position_ids,
 		'attribute_id' => 14,
 	)
-); ?>
+); 
+
+$suppliers = array(); ?>
 
 <h1>Ticket ID <?php echo $ticket->id; ?></h1>
 
@@ -30,14 +32,24 @@ $values = Value::filter(array(
 	<?php if ($inquirer): ?>
 		<fieldset>
 			<legend>Fragesteller</legend>
-			<label for="inquirer_title">Anrede:</label>
-			<?php echo $inquirer->title('inquirer_title'); ?> <br />
-			<label for="inquirer_first_name">Vorname:</label>
-			<input type="text" name="inquirer_first_name" value="<?php echo $inquirer->first_name; ?>" /> <br />
-			<label for="inquirer_last_name">Nachname:</label>
-			<input type="text" name="inquirer_last_name" value="<?php echo $inquirer->last_name; ?>" /> <br />
-			<label for="inquirer_mail">Mail:</label>
-			<input type="text" name="inquirer_mail" value="<?php echo $inquirer->mail; ?>" /> <br />
+			<table>
+				<tr>
+					<td><label for="inquirer_title">Anrede:</label></td>
+					<td><?php echo $inquirer->title('inquirer_title'); ?></td>
+				</tr>
+				<tr>
+					<td><label for="inquirer_first_name">Vorname:</label></td>
+					<td><input type="text" name="inquirer_first_name" value="<?php echo $inquirer->first_name; ?>" style="width: 150px;" /></td>
+				</tr>
+				<tr>
+					<td><label for="inquirer_last_name">Nachname:</label></td>
+					<td><input type="text" name="inquirer_last_name" value="<?php echo $inquirer->last_name; ?>" style="width: 150px;" /></td>
+				</tr>
+				<tr>
+					<td><label for="inquirer_mail">Mail:</label></td>
+					<td><input type="text" name="inquirer_mail" value="<?php echo $inquirer->mail; ?>" style="width: 150px;" /></td>
+				</tr>
+			</table>
 		</fieldset>
 	<?php endif; ?>
 	<fieldset>
@@ -153,70 +165,99 @@ $values = Value::filter(array(
 
 <div style="margin-bottom: 5px;">
 	<button id="send_response_button">Antworten</button>
-	<button id="add_response_button">Kundenantwort einfügen</button>
+	<button id="add_entry_button">Kundenantwort einfügen</button>
 </div>
 
 <?php foreach (array_reverse($ticket->entries->all(), TRUE) as $entry): ?>
-	<fieldset>
+	<fieldset style="margin-bottom: 20px;">
 		<?php if ($entry->participant): ?>
 			<legend>
 				<?php echo $entry->participant->first_name . ' ' . $entry->participant->last_name; ?> | <?php echo date('d.m.Y G:i', $entry->created) . ' Uhr'; ?>
 			</legend>
 		<?php endif; ?>
-		<textarea class="autoresize" style="width: 100%;"><?php echo $entry->text; ?></textarea>
+		<div style="float: left;">
+			<fieldset style="width: 700px;">
+				<legend>Nachricht</legend>
+				<textarea class="autoresize" style="width: 100%; height: 300px;"><?php echo $entry->text; ?></textarea>
+			</fieldset>
+		</div>
+		<div>
+			<fieldset>
+				<legend>Rechte</legend>
+				<?php $entry_rights = array();
+				foreach ($entry->rights->all() as $right) {
+					$entry_rights[$right->participant->id] = TRUE;
+				} ?>
+				<table>
+					<?php foreach ($ticket->participants->all() as $participant): ?>
+						<tr>
+							<?php $checked = (array_key_exists($participant->id, $entry_rights)) ? 'checked' : ''; ?>
+							<td><input type="checkbox" <?php echo $checked; ?> /></td>
+							<td><?php echo $participant->first_name . ' ' . $participant->last_name; ?></td>
+						</tr>
+					<?php endforeach; ?>
+				</table>
+			</fieldset>
+		</div>
 	</fieldset>
 <?php endforeach; ?>
 
 
 <div id="send_response_dialog" style="font-size: 10pt">
-	<fieldset>
-		<legend>Sichtbarkeit</legend>
-		<div>
-			<label for="selector">Auswählen:</label>
-			<select name="selector">
-				<option value="<?php echo $inquirer->id; ?>">Kunde</option>
-				<?php if ($partners = TicketParticipant::filter(array('ticket_id' => $ticket, 'type' => 0))): ?>
-				<optgroup label="Partner">
-					<?php foreach ($partners as $partner): ?>
-						<option value="<?php echo $partner->id; ?>"><?php echo $partner->last_name; ?></option>
-					<?php endforeach; ?>
-				</optgroup>
-				<?php endif; ?>
-				<option>Mitarbeiter</option>
-			</select>
-			<input type="button" value="Markieren" />
-		</div>
-		<table style="font-size: 12px;">
-			<thead>
-				<tr>
-					<th><input type="checkbox" /></th>
-					<th>Teilnehmer</th>
-					<th>Name</th>
-					<th>Uhrzeit</th>
-				</tr>
-			</thead>
-			<tbody>
-			<?php foreach ($ticket->entries->all() as $entry): ?>
-				<tr>
-					<td><input type="checkbox" name="<?php echo "entry[$entry]"; ?>" value="<?php echo $entry->participant->id; ?>" /></td>
-					<td><?php echo $entry->participant->type(); ?></td>
-					<td><?php echo $entry->participant->first_name . ' ' . $entry->participant->last_name; ?></td>
-					<td><?php echo date('d.m.Y G:i', $entry->created) . ' Uhr'; ?></td>
-				</tr>
-			<?php endforeach; ?>
-			</tbody>
-		</table>
-	</fieldset>
-	<fieldset>
-		<legend>Nachricht</legend>
-		<div style="margin: 2px;">Template: <?php echo MailTemplate::create_dropdown_menu('template', 'Freitext'); ?></div>
-		<textarea name="message" style="width: 100%;"></textarea>
-	</fieldset>
+	<form>
+		<fieldset>
+			<legend>Sichtbarkeit</legend>
+			<div>
+				<label for="selector">Auswählen:</label>
+				<select name="selector">
+					<option value="<?php echo $inquirer->id; ?>">Kunde</option>
+					<?php if ($partners = TicketParticipant::filter(array('ticket_id' => $ticket, 'type' => 0))): ?>
+					<optgroup label="Partner">
+						<?php foreach ($partners as $partner): ?>
+							<option value="<?php echo $partner->id; ?>"><?php echo $partner->last_name; ?></option>
+						<?php endforeach; ?>
+					</optgroup>
+					<?php endif; ?>
+					<option>Mitarbeiter</option>
+				</select>
+				<input type="button" value="Markieren" />
+			</div>
+			<table style="font-size: 12px;">
+				<thead>
+					<tr>
+						<th><input type="checkbox" /></th>
+						<th>Typ</th>
+						<th>Anrede</th>
+						<th>Vorname</th>
+						<th>Nachname</th>
+						<th>eMail</th>
+					</tr>
+				</thead>
+				<tbody>
+				<?php foreach ($ticket->participants->all() as $participant): ?>
+					<tr>
+						<td><input type="checkbox" /></td>
+						<td><?php echo $participant->type(); ?></td>
+						<td><?php echo $participant->title(); ?></td>
+						<td><?php echo $participant->first_name; ?></td>
+						<td><?php echo $participant->last_name; ?></td>
+						<td><?php echo $participant->mail; ?>
+					<tr>
+				<?php endforeach; ?>
+				</tbody>
+			</table>
+		</fieldset>
+		<fieldset>
+			<legend>Nachricht</legend>
+			<div style="margin: 2px;">Template: <?php echo MailTemplate::create_dropdown_menu('template', 'Freitext'); ?></div>
+			<textarea name="message" style="width: 100%;"></textarea>
+		</fieldset>
+	</form>
 </div>
 
 
  
-<div id="add_entry_dialog" style="font-size: 10pt">
+<div id="add_entry_dialog" style="font-size: 12px">
 	<form id="add_entry_form" action="<?php echo $ot->get_link('ticket', $ticket->id); ?>" method="POST" enctype="multipart/form-data">
 		<input type="hidden" name="action" value="addresponse" />
 		<fieldset>
@@ -312,19 +353,19 @@ $values = Value::filter(array(
 		theme : "simple"
 	});
 
-	$(document).ready(function () {
-		$('#info_tabs').tabs({ heightStyle: "auto" });
+	jQuery(document).ready(function () {
+		$('#info_tabs').tabs({ heightStyle: "content" });
 		$('#response_tabs').tabs({ heightStyle: "auto" });
 
 		var send_response_dialog = $('#send_response_dialog');
-		var send_response_form = $('#send_response_form', send_response_dialog);
+		var send_response_form = $('form', send_response_dialog);
 		
 		$('#send_response_button').bind('click', function () {
 			send_response_dialog.dialog('open');
 		});
 	
 		send_response_dialog.dialog({
-			title: 'Kundenantwort',
+			title: 'Antwort',
 			autoOpen: false,
 			height: 'auto',
 			width: '700px',
@@ -335,21 +376,20 @@ $values = Value::filter(array(
 				}
 			}
 		});
-		
-		
+
 		$('select[name=template]', send_response_form).bind('change', function () {
 			var id = $(this).val();
-			var text = $('textarea[name=message]', send_response_form);
+			var text = tinyMCE.get('message');
 			if (id > 0) {
-				$.get('ticket/ot_ticket_ajax.php', {id: id, action: 'gettemplate'}, function (data) {
-					if (data['success']) {
-						text.val(data['data']['text']);
+				$.get('ticket/ot_ticket_ajax.php', {id: id, action: 'gettemplate'}, function (response) {
+					if (response['success']) {
+						text.setContent(response['data']['text']);
 					} else {
-						alert('Template konnte nicht geladen werden: ' + data['error']);
+						alert('Template konnte nicht geladen werden: ' + response['error']);
 					}
 				}, 'json');
 			} else {
-				text.val('');
+				text.setContent('');
 			}
 		});
 
@@ -360,7 +400,7 @@ $values = Value::filter(array(
 		});
 	
 		add_entry_dialog.dialog({
-			title: 'Antwort',
+			title: 'Einfügen',
 			autoOpen: false,
 			height: 'auto',
 			width: 'auto',

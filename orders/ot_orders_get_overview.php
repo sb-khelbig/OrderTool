@@ -8,10 +8,11 @@ $query = "	SELECT id, short_name
 $result = MySQL::query($query);
 
 $attributes = array();
-
 while ($row = MySQL::fetch($result)) {
 	$attributes[$row['id']] = $row['short_name'];
 }
+
+DataSource::all();
 
 $query = "	SELECT *
 			FROM ot_order";
@@ -20,13 +21,14 @@ $result = MySQL::query($query);
 
 $orders = array();
 $customers = array();
+$data = array();
 
 while ($row = MySQL::fetch($result)) {
+	$ds = DataSource::get($row['data_source_id']);
+	$data[$row['id']]['data_source'] = $ds->name;
 	$orders[$row['id']] = array();
 	$customers[$row['customer_id']][] = $row['id'];
 }
-
-$data = array();
 
 if ($orders) {
 	
@@ -61,6 +63,7 @@ if ($orders) {
 	<table id="orders">
 		<thead>
 			<tr>
+				<th>Datenquelle</th>
 				<?php foreach ($attributes as $id => $name): ?>
 					<th><?php echo $name; ?></th>
 				<?php endforeach; ?>
@@ -71,6 +74,7 @@ if ($orders) {
 			<tr class="spacing"><td></td></tr>
 			<?php foreach ($data as $id => $values): ?>
 				<tr class="order" id="<?php echo $id; ?>">
+					<td><?php echo $values['data_source'];?></td>
 					<?php foreach ($attributes as $id => $name): ?>
 						<td><?php echo isset($values[$id]) ? $values[$id] : '&nbsp;'; ?></td>
 					<?php endforeach;?>
@@ -142,7 +146,7 @@ if ($orders) {
 									});
 	
 									// jQuery UI Tabs
-									tabs.tabs({active: 2});
+									tabs.tabs({active: 3});
 									
 								} else {
 									tr.addClass('error');
