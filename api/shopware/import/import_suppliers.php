@@ -1,5 +1,7 @@
 <?php $data_source = DataSource::get($_GET['id']);
 
+$options = $data_source->getOptionsArray();
+
 $existing = array();
 foreach ($data_source->suppliers->all() as $sup) {
 	$existing[$sup->external_id] = $sup;

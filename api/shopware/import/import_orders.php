@@ -216,7 +216,7 @@
 	$endtime = round(microtime(true),4);
 	
 	$starttime_save = round(microtime(true),4);
-	//Order::bulk_save($orders);
+	Order::bulk_save($orders);
 	$endtime_save = round(microtime(true),4);
 
 	//// DEBUG
@@ -227,6 +227,6 @@
 	echo "customers: ".count($customers)."<br>";
 	echo "orders in postition_array: ".count($order_positions)."<br>";
 	
-	//header("Location: $referer#api_shopware_tabs_import");
+	header("Location: $referer#api_shopware_tabs_import");
 
 ?>
