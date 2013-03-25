@@ -1,5 +1,4 @@
 <?php
-	echo "<pre>";
 	$data_source = DataSource::get($_GET["id"]);
 	$options = $data_source->getOptionsArray();
 	
