@@ -19,6 +19,7 @@
 						<input type="hidden" name="setting_name[]" value="<?php echo $name; ?>">
 						<label for="setting_value[]"><?php echo $name; ?>: </label>
 						<input type="text" name="setting_value[]" value="<?php echo $value; ?>">
+						<br />
 					<?php endforeach;?>
 					<br />
 					<input type="submit" value="Speichern" />

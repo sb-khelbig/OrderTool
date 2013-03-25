@@ -1,42 +1,20 @@
 <?php
 	echo "<pre>";
 	$data_source = DataSource::get($_GET["id"]);
+	$options = $data_source->getOptionsArray();
 	
 	$referer = $_SERVER["HTTP_REFERER"];
 	set_time_limit(0);
-	ini_set("memory_limit", "1024M") ;
+	ini_set("memory_limit", "1024M");
+	
+	include __DIR__ . '/../db_connection.php';
 	
 	$starttime = round(microtime(true),4);
 	
 	//// FETCH ATTRIBUTE_ASSIGNMENTS
 	$attr_assoc = $data_source->getAssocArray();
-	
-	//// FETCH OPTIONS
-	// TODO: optionen holen
-	
-	$options = array(
-			"api_host" => "85.214.202.153",
-			"api_user" => "k.helbig",
-			"api_pass" => "124578aa",
-			"api_db"   => "shopware",
-			"last_import_id" => 10000,
-			"split_order_positions" => 1,
-			"assoc_vouchers" => 1
-			);
-	
-	//// API_CONNECTION_DATA
-	$api_shopware_host = $options["api_host"];
-	$api_shopware_user = $options["api_user"];
-	$api_shopware_pass = $options["api_pass"];
-	$api_shopware_db   = $options["api_db"];
-	
-	$api_connid = @mysql_connect($api_shopware_host, $api_shopware_user, $api_shopware_pass, true) OR die("Error: ".mysql_error());
-	mysql_select_db($api_shopware_db, $api_connid) OR die("Error: ".mysql_error());
-	
-	mysql_query("SET NAMES 'utf8'", $api_connid) OR die("Error: ".mysql_error());
-	
-	//// OPTIONS
-	$last_import_id = $options["last_import_id"];
+
+	$last_import_id = $options["last_order_import_id"];
 	
 	//// VARIABLES
 	$orders = array();
@@ -69,8 +47,8 @@
 		AND a.userID != 'NULL'
 		ORDER BY o.id ASC
 	";
-	$order_result = mysql_query($order_query, $api_connid) OR die("Error: ".mysql_error());
-	while ($order = mysql_fetch_assoc($order_result))
+	$order_result = MySQL_extern::query($order_query);
+	while ($order = MySQL_extern::fetch($order_result))
 	{
 		$orders[$order["orderID"]] = new Order();
 		$orders[$order["orderID"]]->data_source = $data_source;
@@ -97,8 +75,8 @@
 	FROM s_user
 	WHERE id IN (".join(",", array_keys($customers)).")
 	";
-	$customer_result = mysql_query($customer_query, $api_connid) OR die("Error CUSTOMERFETCH: ".mysql_error());
-	while ($customer = mysql_fetch_assoc($customer_result))
+	$customer_result = MySQL_extern::query($customer_query);
+	while ($customer = MySQL_extern::fetch($customer_result))
 	{
 		// UserID
 		$customers[$customer["id"]]->attributes->add($attr_assoc["ot_customer"]["id"], $customer["id"]);
@@ -121,8 +99,8 @@
 	$customer_billing_address_query = "
 	SELECT * FROM s_order_billingaddress WHERE orderID IN (".join(",", array_keys($orders)).")
 	";
-	$customer_billing_address_result = mysql_query($customer_billing_address_query, $api_connid) OR die("Error: ".mysql_error());
-	while ($customer_billing_address = mysql_fetch_assoc($customer_billing_address_result))
+	$customer_billing_address_result = MySQL_extern::query($customer_billing_address_query);
+	while ($customer_billing_address = MySQL_extern::fetch($customer_billing_address_result))
 	{
 		// TODO: fetch country and state names with join
 		$customer_billing_address["country"] = $customer_billing_address["countryID"];
@@ -168,8 +146,8 @@
 	$customer_shipping_address_query = "
 	SELECT * FROM s_order_shippingaddress WHERE orderID IN (".join(",", array_keys($orders)).")
 	";
-	$customer_shipping_address_result = mysql_query($customer_shipping_address_query, $api_connid) OR die("Error: ".mysql_error());
-	while ($customer_shipping_address = mysql_fetch_assoc($customer_shipping_address_result))
+	$customer_shipping_address_result = MySQL_extern::query($customer_shipping_address_query);
+	while ($customer_shipping_address = MySQL_extern::fetch($customer_shipping_address_result))
 	{
 		// TODO: fetch country and state names with join
 		$customer_shipping_address["country"] = $customer_shipping_address["countryID"];
@@ -201,10 +179,10 @@
 	WHERE orderID IN (".join(",", array_keys($orders)).")
 	ORDER BY orderID";
 	
-	$order_positions_result = mysql_query($order_positions_query, $api_connid) OR die("Error: ".mysql_error());
+	$order_positions_result = MySQL_extern::query($order_positions_query);
 	
 	$articles = array();
-	while ($s_order_details_row = mysql_fetch_assoc($order_positions_result))
+	while ($s_order_details_row = MySQL_extern::fetch($order_positions_result))
 	{
 		if ($s_order_details_row['modus'] == 2) { // Voucher
 			if ($s_order_details_row["restrictarticles"] != "NULL") {
@@ -234,12 +212,11 @@
 			$articles[$s_order_details_row['orderID']][$s_order_details_row['articleordernumber']] = $current;
 		}
 	}
-		
-	mysql_close($api_connid);
+	
 	$endtime = round(microtime(true),4);
 	
 	$starttime_save = round(microtime(true),4);
-	Order::bulk_save($orders);
+	//Order::bulk_save($orders);
 	$endtime_save = round(microtime(true),4);
 
 	//// DEBUG
