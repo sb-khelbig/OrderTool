@@ -58,6 +58,29 @@ switch ($_GET['action']) {
 		}
 		$data['customer'] = array('name' => $name, 'content' => join('', $content), 'id' => $id);
 		
+		// Address
+		
+		$name = 'Adressen';
+		$id = 'adresses_' . $order->id;
+		$content = array();
+		foreach ($order->addresses->all() as $address) {
+			$content[] = '<div style="float: left;">';
+			$content[] = '<p>' . ($address->type ? 'Lieferadresse' : 'Rechnungsanschrift') . '</p>';
+			$content[] = '<ul>';
+				foreach ($address->attributes->all() as $atr) {
+					if ($atr->data) {
+						$content[] = '<li>';
+							$content[] = $atr->attribute->name . ': ' . $atr->data;
+						$content[] = '</li>';
+					}
+				}
+			$content[] = '</ul>';
+			$content[] = '</div>';
+		}
+		$content[] = '<div style="clear: both;"></div>';
+		
+		$data['adresses'] = array('name' => $name, 'content' => join('', $content), 'id' => $id);
+		
 		// Positions
 		$positions = $order->positions->all();
 		$name = 'Positionen (' . count($positions) . ')';

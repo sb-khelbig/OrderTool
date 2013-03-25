@@ -19,7 +19,7 @@
 			"api_user" => "k.helbig",
 			"api_pass" => "124578aa",
 			"api_db"   => "shopware",
-			"last_import_id" => 0,
+			"last_import_id" => 10000,
 			"split_order_positions" => 1,
 			"assoc_vouchers" => 1
 			);
@@ -130,6 +130,7 @@
 		
 		$billing_address = new CustomerAddress();
 		$billing_address->type=0;
+		$orders[$customer_billing_address['orderID']]->addresses->add($billing_address);
 		$customers[$customer_billing_address["userID"]]->addresses->add($billing_address);
 		foreach ($attr_assoc["ot_customer_address"] as $field_name => $attr)
 		{
@@ -176,6 +177,7 @@
 		
 		$shipping_address = new CustomerAddress();
 		$shipping_address->type=1;
+		$orders[$customer_shipping_address['orderID']]->addresses->add($shipping_address);
 		$customers[$customer_shipping_address["userID"]]->addresses->add($shipping_address);
 		foreach ($shipping_address_fields as $field_name => $attr)
 		{

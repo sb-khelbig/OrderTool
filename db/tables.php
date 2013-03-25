@@ -79,6 +79,8 @@ abstract class BaseTable {
 	}
 	
 	public static function bulk_save(&$members, $recursion = array()) {
+		$start = !$recursion;
+		
 		$field_names = static::getFields();
 		
 		$fields = array(
@@ -94,6 +96,7 @@ abstract class BaseTable {
 				case 'BackLinkField':
 					if (!in_array($field->getClass(), $recursion)) {
 						$fields['BackLinkField'][$name] = array();
+						$recursion[] = $field->getClass();
 					}
 					break;
 				case 'ReferenceLinkField':
@@ -123,18 +126,21 @@ abstract class BaseTable {
 			}
 		}
 		
-		if (!$recursion) MySQL::start_transaction();
+		if ($start) MySQL::start_transaction();
 		
 		$recursion[] = get_called_class();
+		var_dump($recursion);
 		
 		// save ForeignKeys 
 		foreach ($fields['ForeignKeyField'] as $name => &$data) {
-			$save = array();
-			foreach ($data as $value) {
-				if (is_object($value)) $save[] = $value;
+			if (!in_array($field_names[$name]->getClass(), $recursion)) {
+				$save = array();
+				foreach ($data as $value) {
+					if (is_object($value)) $save[] = $value;
+				}
+				$class = $field_names[$name]->getClass();
+				if ($save) $class::bulk_save($save, $recursion);
 			}
-			$class = $field_names[$name]->getClass();
-			if ($save) $class::bulk_save($save, $recursion);
 		}
 		
 		// save Vars
@@ -202,7 +208,7 @@ abstract class BaseTable {
 							}
 						}
 						
-						if (count($recursion) == 1) {
+						if ($start) {
 							Value::save_new();
 							MySQL::commit();
 						}
@@ -456,6 +462,7 @@ class CustomerAddress extends BaseTable {
 				'id' => new PrimaryKeyField(),
 				'type' => new BooleanField('type'),
 				'customer' => new ForeignKeyField('customer_id', 'Customer'),
+				'order' => new ForeignKeyField('order_id', 'Order'),
 				'attributes' => new AttributeValueField($instance),
 		);
 	}
@@ -601,6 +608,7 @@ class Order extends BaseTable {
 				'data_source' => new ForeignKeyField('data_source_id', 'DataSource'),
 				'positions' => new BackLinkField($instance, 'order_id', 'Position', 'order'),
 				'attributes' => new AttributeValueField($instance),
+				'addresses' => new BackLinkField($instance, 'order_id', 'CustomerAddress', 'order'),
 				//'tickets' => new ReferenceLinkField($instance, 'Ticket', 'ref_table', 'ref_id'),
 		);
 	}
