@@ -762,6 +762,26 @@ class TicketParticipant extends BaseTable {
 		
 		return join('', $select);
 	}
+	
+	public function generate_token($key, $algo = 'sha256') {
+		if ($this->id) {
+			if (!$this->token) {
+				$data = $this->toArray();
+				$data['key'] = $key;
+				$token = json_encode($data);
+				$this->token = hash($algo, $token);
+				
+				$query = "	UPDATE " . static::getTableName() . "
+							SET token = '" . $this->token . "'
+							WHERE id = " . $this->id;
+				
+				MySQL::query($query);
+			}
+			return $this->token;
+		} else {
+			return FALSE;
+		}
+	}
 }
 
 class TicketReference extends BaseTable {

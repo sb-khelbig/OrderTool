@@ -1,10 +1,4 @@
 <?php
-function generate_token($object, $key, $algo = 'sha256') {
-	$data = $object->toArray();
-	$data['key'] = $key;
-	$token = json_encode($data);
-	return hash($algo, $token);
-}
 
 function save_ticket($category, $table, $references, $text, $data) {
 	$ticket = new Ticket();
@@ -74,8 +68,7 @@ function save_ticket($category, $table, $references, $text, $data) {
 	
 	include __DIR__ . '/confirmation_mail.php';
 	
-	$participant->token = generate_token($participant, $GLOBALS['key']);
-	$participant->update();
+	$participant->generate_token($GLOBALS['key']);
 	
 	$response = confirmation_mail($ticket, $participant);
 	

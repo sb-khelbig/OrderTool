@@ -12,18 +12,33 @@ if ($ticket->ref_table == 'ot_position') {
 	$order = Order::get($references[0]->ref_id);
 }
 
-$position_ids = array();
-foreach ($order->positions->all() as $position) {
-	$position_ids[] = $position->id;
+$positions = $order->positions->all();
+$references = $ticket->references->all();
+$participants = $ticket->participants->all();
+$entries = $ticket->entries->all();
+
+$ids = array();
+foreach ($positions as $position) {
+	$ids[$position->id] = 0;
 }
 
-$values = Value::filter(array(
-		'ref_id' => $position_ids,
-		'attribute_id' => 14,
-	)
-); 
+foreach (Value::filter(array('ref_id' => array_keys($ids), 'attribute_id' => 47)) as $value) {
+	$ids[$value->reference] = $value->data ? "'" . $value->data . "'" : 0;
+}
 
-$suppliers = array(); ?>
+$query = "	SELECT supplier_id
+			FROM ot_supplier_has_data_source
+			WHERE external_id IN (" . join(', ', $ids) . ")
+				AND data_source_id = " . $order->data_source->id;
+
+$result = MySQL::query($query);
+
+$suppliers = array();
+while ($row = MySQL::fetch($result)) {
+	$suppliers[] = $row['supplier_id'];
+}
+
+$suppliers = Supplier::filter(array('id' => $suppliers)); ?>
 
 <h1>Ticket ID <?php echo $ticket->id; ?></h1>
 
@@ -70,7 +85,7 @@ $suppliers = array(); ?>
 			<ul>
 				<li><a href="#info_tabs-1">ID</a></li>
 				<li><a href="#info_tabs-2">Bestellung</a></li>
-				<li><a href="#info_tabs-3">Positionen (<?php echo count($order->positions->all()); ?>)</a></li>
+				<li><a href="#info_tabs-3">Positionen (<?php echo count($positions); ?>)</a></li>
 			</ul>
 			<div id="info_tabs-1">
 				<label for="ref_table">Anfrage zu:</label>
@@ -79,7 +94,7 @@ $suppliers = array(); ?>
 					<option value="ot_position" <?php echo ($ticket->ref_table == 'ot_position') ? 'selected' : ''; ?>>Position</option>
 				</select>
 				<ul>
-				<?php foreach ($ticket->references->all() as $reference): ?>
+				<?php foreach ($references as $reference): ?>
 					<li><input type="number" name="ref_id" value="<?php echo $reference->ref_id; ?>" /></li>
 				<?php endforeach; ?>
 				</ul>
@@ -95,7 +110,7 @@ $suppliers = array(); ?>
 				<?php 
 				$attributes = array('ID' => 'ID');
 				$rows = array();
-				foreach ($order->positions->all() as $entity) {
+				foreach ($positions as $entity) {
 					$rows[$entity->id]['ID'] = $entity->id;
 					foreach ($entity->attributes->all() as $atr) {
 						if (!array_key_exists($atr->attribute->id, $attributes)) {
@@ -145,7 +160,7 @@ $suppliers = array(); ?>
 					</tr>
 				</thead>
 				<tbody id="participants-table">
-				<?php foreach ($ticket->participants->all() as $participant): ?>
+				<?php foreach ($participants as $participant): ?>
 					<tr>
 						<td><?php echo $participant->type(); ?></td>
 						<td><?php echo $participant->title(); ?></td>
@@ -168,7 +183,7 @@ $suppliers = array(); ?>
 	<button id="add_entry_button">Kundenantwort einfügen</button>
 </div>
 
-<?php foreach (array_reverse($ticket->entries->all(), TRUE) as $entry): ?>
+<?php foreach (array_reverse($entries, TRUE) as $entry): ?>
 	<fieldset style="margin-bottom: 20px;">
 		<?php if ($entry->participant): ?>
 			<legend>
@@ -189,10 +204,10 @@ $suppliers = array(); ?>
 					$entry_rights[$right->participant->id] = TRUE;
 				} ?>
 				<table>
-					<?php foreach ($ticket->participants->all() as $participant): ?>
+					<?php foreach ($participants as $participant): ?>
 						<tr>
 							<?php $checked = (array_key_exists($participant->id, $entry_rights)) ? 'checked' : ''; ?>
-							<td><input type="checkbox" <?php echo $checked; ?> /></td>
+							<td><input type="checkbox" <?php echo $checked; ?> name="participant[<?php echo $participant->id; ?>]" value="<?php echo $participant->type; ?>" /></td>
 							<td><?php echo $participant->first_name . ' ' . $participant->last_name; ?></td>
 						</tr>
 					<?php endforeach; ?>
@@ -204,7 +219,8 @@ $suppliers = array(); ?>
 
 
 <div id="send_response_dialog" style="font-size: 10pt">
-	<form>
+	<form action="<?php echo $ot->get_link('ticket', $ticket->id); ?>" method="POST" enctype="multipart/form-data">
+		<input type="hidden" name="action" value="respond" />
 		<fieldset>
 			<legend>Sichtbarkeit</legend>
 			<div>
@@ -234,9 +250,9 @@ $suppliers = array(); ?>
 					</tr>
 				</thead>
 				<tbody>
-				<?php foreach ($ticket->participants->all() as $participant): ?>
+				<?php foreach ($participants as $participant): ?>
 					<tr>
-						<td><input type="checkbox" /></td>
+						<td><input type="checkbox" name="participant[<?php echo $participant->id; ?>]" value="<?php echo $participant->type;?>" /></td>
 						<td><?php echo $participant->type(); ?></td>
 						<td><?php echo $participant->title(); ?></td>
 						<td><?php echo $participant->first_name; ?></td>
@@ -268,33 +284,45 @@ $suppliers = array(); ?>
 </div>
 
 <div id="participants-dialog" style="font-size: 12px">
-	<form id="participants-form">
+	<form id="participants-form" action="<?php $ot->get_link('ticket', $ticket->id); ?>" method="POST" enctype="multipart/form-data">
+		<input type="hidden" name="action" value="addparticipant" />
 		<fieldset>
 			<legend>Teilnehmer</legend>
-			<select name="type">
-				<option value="0">Wählen...</option>
+			<select name="contact">
+				<option value="0">Extern</option>
 				<?php if ($suppliers): ?>
 					<?php foreach ($suppliers as $supplier): ?>
 						<optgroup label="<?php echo "$supplier"; ?>">
 							<?php foreach ($supplier->contacts->all() as $contact): ?>
-								<option value="<?php $contact->id; ?>"><?php echo "$contact (" . $contact->mail . ")"; ?></option>
+								<option value="<?php echo $contact->id; ?>"><?php echo "$contact (" . $contact->mail . ")"; ?></option>
 							<?php endforeach; ?>
 						</optgroup>
 					<?php endforeach; ?>
 				<?php endif; ?>
-				<option value="2">Extern</option>
 			</select> <br />
-			<label for="title">Anrede:</label>
-			<select name="title" disabled>
-				<option value="1">Herr</option>
-				<option value="2">Frau</option>
-			</select> <br />
-			<label for="first_name">Vorname:</label>
-			<input type="text" name="first_name" disabled /> <br />
-			<label for="last_name">Nachname:</label>
-			<input type="text" name="last_name" disabled /> <br />
-			<label for="mail">Mail:</label>
-			<input type="text" name="mail" disabled /> <br />
+			<table id="participants-fields" style="font-size: 12px;">
+				<tr>
+					<td><label for="title">Anrede:</label></td>
+					<td>
+						<select name="title">
+							<option value="1">Herr</option>
+							<option value="2">Frau</option>
+						</select>
+					</td>
+				</tr>
+				<tr>
+					<td><label for="first_name">Vorname:</label></td>
+					<td><input type="text" name="first_name" /></td>
+				</tr>
+				<tr>
+					<td><label for="last_name">Nachname:</label></td>
+					<td><input type="text" name="last_name" /></td>
+				</tr>
+				<tr>
+					<td><label for="mail">Mail:</label></td>
+					<td><input type="text" name="mail" /></td>
+				</tr>
+			</table>
 		</fieldset>
 		<fieldset>
 			<legend>Korrespondenz</legend>
@@ -304,31 +332,26 @@ $suppliers = array(); ?>
 						<div>
 							<label for="selector">Auswählen:</label>
 							<select name="selector">
-								<option value="<?php echo $inquirer->id; ?>">Kunde</option>
-								<?php if ($partners = TicketParticipant::filter(array('ticket_id' => $ticket, 'type' => 0))): ?>
-								<optgroup label="Partner">
-									<?php foreach ($partners as $partner): ?>
-										<option value="<?php echo $partner->id; ?>"><?php echo $partner->last_name; ?></option>
-									<?php endforeach; ?>
-								</optgroup>
-								<?php endif; ?>
-								<option>Mitarbeiter</option>
+								<option value="-1">Keinen</option>
+								<option value="0">Mitarbeiter</option>
+								<option value="1">Kunde</option>
+								<option value="2">Extern</option>
 							</select>
-							<input type="button" value="Markieren" />
+							<input class="selector-button" type="button" value="Markieren" />
 						</div>
-						<table style="font-size: 12px;">
+						<table class="toggleable" style="font-size: 12px;">
 							<thead>
 								<tr>
-									<th><input type="checkbox" /></th>
+									<th><input class="action-toggle" type="checkbox" /></th>
 									<th>Teilnehmer</th>
 									<th>Name</th>
 									<th>Uhrzeit</th>
 								</tr>
 							</thead>
 							<tbody>
-							<?php foreach ($ticket->entries->all() as $entry): ?>
+							<?php foreach ($entries as $entry): ?>
 								<tr>
-									<td><input type="checkbox" name="<?php echo "entry[$entry]"; ?>" value="<?php echo $entry->participant->id; ?>" /></td>
+									<td><input type="checkbox" name="<?php echo "entry[$entry]"; ?>" value="<?php echo $entry->participant->type; ?>" /></td>
 									<td><?php echo $entry->participant->type(); ?></td>
 									<td><?php echo $entry->participant->first_name . ' ' . $entry->participant->last_name; ?></td>
 									<td><?php echo date('d.m.Y G:i', $entry->created) . ' Uhr'; ?></td>
@@ -339,8 +362,8 @@ $suppliers = array(); ?>
 					</div>
 			</fieldset>
 			<fieldset>
-				<legend>Nachricht <input id="participants-form-entry-switch" type="checkbox" /></legend>
-				<div id="participants-form-text" style="display: none;"><textarea style="width: 500px; height: 200px;"></textarea></div>
+				<legend>Nachricht <input id="participants-form-entry-switch" name="send_message" value="1" type="checkbox" /></legend>
+				<div id="participants-form-text" style="display: none;"><textarea name="message" style="width: 500px; height: 200px;"></textarea></div>
 			</fieldset>
 		</fieldset>
 	</form>
@@ -354,7 +377,7 @@ $suppliers = array(); ?>
 	});
 
 	jQuery(document).ready(function () {
-		$('#info_tabs').tabs({ heightStyle: "content" });
+		$('#info_tabs').tabs({ heightStyle: "content", active: 2});
 		$('#response_tabs').tabs({ heightStyle: "auto" });
 
 		var send_response_dialog = $('#send_response_dialog');
@@ -415,7 +438,7 @@ $suppliers = array(); ?>
 		var participants = $('#participants-dialog');
 
 		participants.dialog({
-			title: 'Antwort',
+			title: 'Teilnehmer hinzufügen',
 			autoOpen: false,
 			height: 'auto',
 			width: '585',
@@ -431,8 +454,39 @@ $suppliers = array(); ?>
 			participants.dialog('open');
 		});
 
+		$('select[name=contact]', participants).bind('change', function () {
+			var select = $(this);
+			var fields = $('#participants-fields');
+
+			if (select.val() > 0) {
+				fields.hide();
+			} else {
+				fields.show();
+			};
+		});
+
 		$('#participants-form-entry-switch').bind('change', function () {
 			$('#participants-form-text').toggle();
+		});
+
+		$('.toggleable').each(function (index, obj) {
+			$('.action-toggle', obj).bind('change', function (event) {
+				var toggle = $(this);
+				var checked = toggle.prop('checked');
+				$('input[type=checkbox]', obj).prop('checked', checked);
+			});
+		});
+
+		$('.selector-button', participants).bind('click', function () {
+			var select = $('select[name=selector]', participants);
+			$('input[type=checkbox]', $('.toggleable', participants)).each(function (index, obj) {
+				var box = $(obj);
+				if (box.val() == select.val()) {
+					box.prop('checked', true);
+				} else {
+					box.prop('checked', false);
+				};
+			});
 		});
 	});
 </script>
