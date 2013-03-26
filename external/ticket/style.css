@@ -1,0 +1,150 @@
+@CHARSET "ISO-8859-1";
+
+*.* {
+	padding: 0;
+	margin: 0;
+	font-size: 12px;
+	font-family: Arial;
+}
+
+html, a, a:link, a:active, a:hover, a:visted {color: #333;}
+html {font: 12px/1.3em Arial,"Helvetica Neue",Helvetica,sans-serif; padding-top: 0px;}
+
+div.ticket_overview_entry {
+	cursor:pointer;
+	padding: 10px;
+	border-top: 1px solid #EBEBEB;
+	overflow: hidden;
+	margin:0 !important;
+}
+
+div.ticket_overview_entry_bold div {
+	font-weight: bold;
+}
+
+
+div.ticket_overview_entry:hover {
+	background-color: #EEE;
+}
+
+div.ticket_overview_entry .date {
+	float:left;
+	margin:0;
+	width: 100px;
+}
+
+div.ticket_overview_entry .ticket_id {
+	float:left;
+	margin:0;
+	width: 100px;
+}
+
+div.ticket_overview_entry .text {
+	float:left;
+	margin:0;
+}
+
+div.ticket_overview_entry .status {
+	float:right;
+	margin:0;
+	width: 100px;
+	text-align: center;
+	background-color: #F5F5F5;
+	border:1px solid #888;
+	border-radius: 5px;
+	padding: 2px;
+}
+
+div.ticket_overview_head {
+	padding: 10px;
+	overflow: hidden;
+	margin:0 !important;
+}
+
+div.ticket_overview_head .date {
+	float:left;
+	margin:0;
+	width: 100px;
+	font-weight: bold;
+}
+
+div.ticket_overview_head .ticket_id {
+	float:left;
+	margin:0;
+	width: 100px;
+	font-weight: bold;
+}
+
+div.ticket_overview_head .text {
+	float:left;
+	margin:0;
+	font-weight: bold;
+}
+
+div.ticket_overview_head .status {
+	float:right;
+	margin:0;
+	width: 106px;
+	font-weight: bold;
+	text-align: center;
+}
+
+div.ticket_entry {
+	padding: 10px;
+	border-top: 1px solid #EBEBEB;
+	overflow: hidden;
+	margin:0 !important;
+}
+
+div.ticket_entry .type {
+	float:left;
+	border:1px solid #000;
+	padding-left: 5px;
+	padding-right: 5px;
+	margin-right: 10px;
+	border-radius:5px;
+	font-weight:bold;
+	color:#000;
+}
+
+div.ticket_entry .se {
+	background-color:#FFBF7A;
+}
+
+div.ticket_entry .user {
+	background-color:#9EA6FF;
+}
+
+div.ticket_entry .extern {
+	background-color:#B1FFA8;
+}
+
+div.ticket_entry .name {
+	float:left;
+	font-weight:bold;
+}
+
+div.ticket_entry .date {
+	float:right;
+	font-weight:bold;
+}
+
+div.ticket_entry .text {
+	clear:both;
+}
+
+div.ticket {
+	border: 1px solid #444;
+}
+
+div.ticket_head {
+	padding: 10px;
+	font-weight: bold;
+	background-color: #FAFAFA;
+}
+
+div.content_wrapper {
+	width: 800px;
+	margin-left: auto ;
+	margin-right: auto ;
+}

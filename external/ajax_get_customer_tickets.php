@@ -50,7 +50,7 @@ try {
 			
 			$position_ticket_query = "
 				SELECT ot_ticket.id, ot_ticket.timestamp_created, ot_ticket.status, article_name.data AS article_name, min(entry_right.read) as 'read'
-				FROM ot_value AS customer_value, ot_order, ot_position, ot_ticket_reference, ot_ticket, ot_value AS article_name, ot_ticket_entry_right AS entry_right, ot_ticket_entry AS entry
+				FROM ot_value AS customer_value, ot_order, ot_position, ot_ticket_reference, ot_ticket, ot_value AS article_name, ot_ticket_entry_right AS entry_right, ot_ticket_entry AS entry, ot_ticket_participant AS participant
 				WHERE customer_value.attribute_id = 23
 				AND   customer_value.data = $customer_id
 				AND   customer_value.ref_id = ot_order.customer_id
@@ -63,6 +63,8 @@ try {
 				AND   ot_ticket.ref_table = 'ot_position'
 				AND   entry.ticket_id = ot_ticket.id
 				AND   entry_right.entry_id = entry.id
+				AND   participant.id = entry_right.participant_id
+				AND   participant.type = 1
 				GROUP BY ot_ticket.id
 				ORDER BY max(entry.id) DESC
 			";
